@@ -4,9 +4,9 @@ import java.util.Collection;
 
 public interface PieceMovesCalculator {
     Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition);
-    default boolean border(ChessPosition leagalposion){
-        int row=leagalposion.getRow();
-        int col=leagalposion.getColumn();
+    default boolean border(ChessPosition legalPosition){
+        int row=legalPosition.getRow();
+        int col=legalPosition.getColumn();
         if (row < 1 || row > 8 || col < 1 || col > 8) {
             return false;
         } else {
