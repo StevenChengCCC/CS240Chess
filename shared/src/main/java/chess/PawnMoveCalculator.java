@@ -77,8 +77,8 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
                             int movetwostepRow = rowonestep + dir; // row-2
                             ChessPosition moveTwoStep = new ChessPosition(movetwostepRow, PawnCol);
                             if (border(moveTwoStep)) {
-                                ChessPiece occupantTwoStep = board.getPiece(moveTwoStep);
-                                if (occupantTwoStep == null) {
+                                ChessPiece MoveTwoStep = board.getPiece(moveTwoStep);
+                                if (MoveTwoStep == null) {
                                     possibleMoves.add(new ChessMove(myPosition, moveTwoStep, null));
                                 }
                             }
