@@ -3,6 +3,7 @@ package chess;
 import java.util.ArrayList;
 import java.util.Collection;
 
+
 /**
  * For a class that can manage a chess game, making moves on a board
  * <p>
@@ -95,17 +96,17 @@ public class ChessGame {
             return true;
         }
         // 2. 遍历敌方所有棋子，看它们是否能走到(吃掉)王的位置
-        for (int y = 1; y <= 8; y++) {
-            for (int x = 1; x <= 8; x++) {
-                ChessPiece enemy = board.getPiece(new ChessPosition(y, x));
-                if (enemy == null || enemy.getTeamColor() == teamColor) {
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPiece EnemyPosition = board.getPiece(new ChessPosition(row, col));
+                if (EnemyPosition == null || EnemyPosition.getTeamColor() == teamColor) {
                     continue; // 检查是否为enemy
                 }
-                Collection<ChessMove> enemyMoves = enemy.pieceMoves(board, new ChessPosition(y, x));
+                Collection<ChessMove> enemyMoves = EnemyPosition.pieceMoves(board, new ChessPosition(row, col));
                 // 判断能否攻击到king
                 if (enemyMoves != null) {
                     for (ChessMove move : enemyMoves) {
-                        if (move.getEndPosition() == kingPosition) {
+                        if (move.getEndPosition().equals(kingPosition)) {
                             return true;  // 有一步能打到王
                         }
                     }
@@ -122,17 +123,31 @@ public class ChessGame {
 
 
     public boolean isInStalemate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition StalematePosition = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(StalematePosition);
+                //如果为空并且颜色不对
+                if (piece != null && piece.getTeamColor() == teamColor && !isInCheck(piece.getTeamColor())) {
+                    //如果没有可以走的路线
+                    Collection<ChessMove> moves = validMoves(StalematePosition);
+                    if (moves != null && !moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private ChessPosition findKingPosition(ChessBoard Board,
                                            TeamColor teamColor) {
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = Board.getPiece(pos);
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece piece = Board.getPiece(position);
                 if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
-                    return pos;
+                    return position;
                 }
             }
         }
