@@ -84,18 +84,42 @@ public class ChessGame {
 
 
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException();
+        // 获取合法走位
+        Collection<ChessMove> AbleToMoves = validMoves(move.getStartPosition());
+        if (AbleToMoves == null) {
+            throw new InvalidMoveException("No valid moves.");
+        }
+        // 正确的走棋方
+        if (AbleToMoves.contains(move) && getTeamTurn() == board.getPiece(move.getStartPosition()).getTeamColor()) {
+            ChessPiece pieceToMove = board.getPiece(move.getStartPosition());
+            // 如果有升变需求
+            if (move.getPromotionPiece() != null) {
+                pieceToMove = new ChessPiece(pieceToMove.getTeamColor(), move.getPromotionPiece());
+            }
+            // 把棋子移走
+            board.addPiece(move.getStartPosition(), null);
+            // 再把放下
+            board.addPiece(move.getEndPosition(), pieceToMove);
+            // 切换回合
+            if (getTeamTurn() == chess.ChessGame.TeamColor.WHITE) {
+                setTeamTurn(chess.ChessGame.TeamColor.BLACK);
+            } else {
+                setTeamTurn(chess.ChessGame.TeamColor.WHITE);
+            }
+        }else {
+            throw new InvalidMoveException("Invalid move");
+        }
     }
 
 
     public boolean isInCheck(TeamColor teamColor) {
-        // 1. 找到指定颜色的王
+        // 找到指定颜色的王
         ChessPosition kingPosition = findKingPosition(board, teamColor);
         if (kingPosition == null) {
-            // 理论上不该发生，如果王都不在，则当做被将军处理
+            //如果王不存在就是被将军了
             return true;
         }
-        // 2. 遍历敌方所有棋子，看它们是否能走到(吃掉)王的位置
+        //遍历敌方所有棋子，看它们是否能吃王的位置
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPiece EnemyPosition = board.getPiece(new ChessPosition(row, col));
@@ -107,7 +131,7 @@ public class ChessGame {
                 if (enemyMoves != null) {
                     for (ChessMove move : enemyMoves) {
                         if (move.getEndPosition().equals(kingPosition)) {
-                            return true;  // 有一步能打到王
+                            return true;
                         }
                     }
                 }
