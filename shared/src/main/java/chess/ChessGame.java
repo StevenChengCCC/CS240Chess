@@ -84,7 +84,7 @@ public class ChessGame {
 
 
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        throw new RuntimeException();
     }
 
 
@@ -118,17 +118,37 @@ public class ChessGame {
 
 
     public boolean isInCheckmate(TeamColor teamColor) {
-        return isInCheck(teamColor) && isInStalemate(teamColor);
-    }
-
-
-    public boolean isInStalemate(TeamColor teamColor) {
+        if (!isInCheck(teamColor)){
+            return false;
+        }
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition StalematePosition = new ChessPosition(row, col);
                 ChessPiece piece = board.getPiece(StalematePosition);
                 //如果为空并且颜色不对
-                if (piece != null && piece.getTeamColor() == teamColor && !isInCheck(piece.getTeamColor())) {
+                if (piece != null && piece.getTeamColor() == teamColor) {
+                    //如果没有可以走的路线
+                    Collection<ChessMove> moves = validMoves(StalematePosition);
+                    if (moves != null && !moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+
+    public boolean isInStalemate(TeamColor teamColor) {
+        if (isInCheck(teamColor)){
+            return false;
+        }
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition StalematePosition = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(StalematePosition);
+                //如果为空并且颜色不对
+                if (piece != null && piece.getTeamColor() == teamColor) {
                     //如果没有可以走的路线
                     Collection<ChessMove> moves = validMoves(StalematePosition);
                     if (moves != null && !moves.isEmpty()) {
@@ -142,8 +162,8 @@ public class ChessGame {
 
     private ChessPosition findKingPosition(ChessBoard Board,
                                            TeamColor teamColor) {
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
                 ChessPiece piece = Board.getPiece(position);
                 if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
