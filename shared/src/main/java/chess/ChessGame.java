@@ -1,5 +1,6 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -9,11 +10,11 @@ import java.util.Collection;
  * signature of the existing methods.
  */
 public class ChessGame {
-    private ChessBoard board;      // The current game board
+    private ChessBoard board;
     private TeamColor currentTeam;
     public ChessGame() {
         this.board = new ChessBoard();
-        this.board.resetBoard(); // Start with standard chess layout
+        this.board.resetBoard();
         this.currentTeam = TeamColor.WHITE;
     }
 
@@ -49,57 +50,94 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null) {
-            return null;
-        Collection<ChessMove> allMoves = piece.pieceMoves(board, startPosition);
-        for (ChessMove moves : allMoves) {
-            return legalMoves;
-            }
+        ChessPiece currPiece = board.getPiece(startPosition);
+        if (currPiece == null) {
+            return null;  //没有棋子直接返回null
         }
+        // 获取原生的所有可能走法
+        Collection<ChessMove> rawMoves = currPiece.pieceMoves(board, startPosition);
+        // 如果没有走法，直接返回null
+        if (rawMoves == null || rawMoves.isEmpty()) {
+            return null;
+        }
+        ArrayList<ChessMove> possibleMoves = new ArrayList<>(rawMoves);
+        ArrayList<ChessMove> validMoves = new ArrayList<>();
+        // 逐一测试每个潜在走法，判断走完后自己方是否会被将军
+        for (ChessMove move : possibleMoves) {
+            // 记录目标位置原本的棋子，以便还原
+            ChessPiece capturedPiece = board.getPiece(move.getEndPosition());
+            // 1. 把当前棋子从起始位置拿走
+            board.addPiece(startPosition, null);
+            // 2. 放到目标位置（可能吃掉对方棋子）
+            board.addPiece(move.getEndPosition(), currPiece);
+            // 如果走完不会让自己方被将军，则此走法有效
+            if (!isInCheck(currPiece.getTeamColor())) {
+                validMoves.add(move);
+            }
+            // 还原棋盘
+            board.addPiece(move.getEndPosition(), capturedPiece);
+            board.addPiece(startPosition, currPiece);
+        }
+        return validMoves;
     }
 
-    /**
-     * Makes a move in a chess game
-     *
-     * @param move chess move to preform
-     * @throws InvalidMoveException if move is invalid
-     */
+
     public void makeMove(ChessMove move) throws InvalidMoveException {
         throw new RuntimeException("Not implemented");
     }
 
-    /**
-     * Determines if the given team is in check
-     *
-     * @param teamColor which team to check for check
-     * @return True if the specified team is in check
-     */
+
     public boolean isInCheck(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        // 1. 找到指定颜色的王
+        ChessPosition kingPosition = findKingPosition(board, teamColor);
+        if (kingPosition == null) {
+            // 理论上不该发生，如果王都不在，则当做被将军处理
+            return true;
+        }
+        // 2. 遍历敌方所有棋子，看它们是否能走到(吃掉)王的位置
+        for (int y = 1; y <= 8; y++) {
+            for (int x = 1; x <= 8; x++) {
+                ChessPiece enemy = board.getPiece(new ChessPosition(y, x));
+                if (enemy == null || enemy.getTeamColor() == teamColor) {
+                    continue; // 检查是否为enemy
+                }
+                Collection<ChessMove> enemyMoves = enemy.pieceMoves(board, new ChessPosition(y, x));
+                // 判断能否攻击到king
+                if (enemyMoves != null) {
+                    for (ChessMove move : enemyMoves) {
+                        if (move.getEndPosition() == kingPosition) {
+                            return true;  // 有一步能打到王
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
-    /**
-     * Determines if the given team is in checkmate
-     *
-     * @param teamColor which team to check for checkmate
-     * @return True if the specified team is in checkmate
-     */
+
     public boolean isInCheckmate(TeamColor teamColor) {
         return isInCheck(teamColor) && isInStalemate(teamColor);
     }
 
-    /**
-     * Determines if the given team is in stalemate, which here is defined as having
-     * no valid moves
-     *
-     * @param teamColor which team to check for stalemate
-     * @return True if the specified team is in stalemate, otherwise false
-     */
+
     public boolean isInStalemate(TeamColor teamColor) {
         throw new RuntimeException("Not implemented");
     }
 
+    private ChessPosition findKingPosition(ChessBoard Board,
+                                           TeamColor teamColor) {
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = Board.getPiece(pos);
+                if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    return pos;
+                }
+            }
+        }
+        return null;
+    }
     /**
      * Sets this game's chessboard with a given board
      *
