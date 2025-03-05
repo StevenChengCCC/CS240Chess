@@ -35,4 +35,21 @@ public class UserService {
 
         return auth;
     }
+    public AuthData login(String username, String password) throws DataAccessException {
+        // check if the password and username is null
+        if (username == null || password == null) {
+            throw new DataAccessException("bad request: username or password is blank");
+        }
+        // check if authorized
+        var existingUser = userDAO.getUser(username);
+        if (existingUser == null || existingUser.password() != password) {
+            throw new DataAccessException("unauthorized: invalid username/password");
+        }
+        String token = UUID.randomUUID().toString();
+        var auth = new AuthData(token, username);
+        authDAO.createAuth(auth);
+
+        return auth;
+    }
+
 }
