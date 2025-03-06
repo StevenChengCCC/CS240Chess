@@ -7,7 +7,7 @@ import spark.Route;
 import dataaccess.MemoryDatabase;
 import com.google.gson.Gson;
 
-public class AuthHandler implements Route {
+public class ClearHandler implements Route {
     private final Gson gson = new Gson();
 
     @Override
