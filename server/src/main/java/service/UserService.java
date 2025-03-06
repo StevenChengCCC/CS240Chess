@@ -7,7 +7,7 @@ import model.AuthData;
 import model.UserData;
 import java.util.UUID;
 
-// service for register login logout
+// service for register, login, and  logout
 
 public class UserService {
     private final UserDAO userDAO;
@@ -52,4 +52,15 @@ public class UserService {
         return auth;
     }
 
+    public void logout(String token) throws DataAccessException {
+        // check if the password and username is null
+        if (token == null) {
+            throw new DataAccessException("unauthorized: missing token");
+        }
+        var existingAuth = authDAO.getAuth(token);
+        if (existingAuth == null) {
+            throw new DataAccessException("unauthorized: token not found");
+        }
+        authDAO.deleteAuth(token);
+    }
 }
