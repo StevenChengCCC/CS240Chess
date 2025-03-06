@@ -13,8 +13,8 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
         ChessPiece Pawn = board.getPiece(myPosition);
         ChessGame.TeamColor myColor = Pawn.getTeamColor();
 
-        int PawnRow = myPosition.getRow();
-        int PawnCol = myPosition.getColumn();
+        int pawnRow = myPosition.getRow();
+        int pawnCol = myPosition.getColumn();
         int dir;
         if (myColor == ChessGame.TeamColor.WHITE) {
             dir = 1;
@@ -23,11 +23,11 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
         }
 
         //前进一格
-        int rowonestep = PawnRow + dir;
-        ChessPosition moveonestep = new ChessPosition(rowonestep, PawnCol);
+        int rowOneStep = pawnRow + dir;
+        ChessPosition moveOneStep = new ChessPosition(rowOneStep, pawnCol);
 
-        if (border(moveonestep)) {
-            ChessPiece occupantOneStep = board.getPiece(moveonestep);
+        if (border(moveOneStep)) {
+            ChessPiece occupantOneStep = board.getPiece(moveOneStep);
 
             // 必须前方无棋子才能前进
             if (occupantOneStep == null) {
@@ -35,20 +35,20 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
                 // 检测升变
                 // 如果是白兵并且走到第8行
                 if (myColor == ChessGame.TeamColor.WHITE) {
-                    if (rowonestep == 8) {
+                    if (rowOneStep == 8) {
                         // 四种升变
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.QUEEN));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.ROOK));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.BISHOP));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.KNIGHT));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.QUEEN));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.ROOK));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.BISHOP));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.KNIGHT));
                     } else {
                         // 未到达升变行
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, null));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, null));
 
                         // 起始两步(白兵在第2行)
-                        if (PawnRow == 2) {
-                            int movetwostepRow = rowonestep + dir; // row+2
-                            ChessPosition moveTwoStep = new ChessPosition(movetwostepRow, PawnCol);
+                        if (pawnRow == 2) {
+                            int movetwostepRow = rowOneStep + dir; // row+2
+                            ChessPosition moveTwoStep = new ChessPosition(movetwostepRow, pawnCol);
                             if (border(moveTwoStep)) {
                                 ChessPiece occupantTwoStep = board.getPiece(moveTwoStep);
                                 if (occupantTwoStep == null) {
@@ -61,20 +61,20 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
 
                 // 如果是黑兵并且走到第1行
                 if (myColor == ChessGame.TeamColor.BLACK) {
-                    if (rowonestep == 1) {
+                    if (rowOneStep == 1) {
                         // 四种升变
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.QUEEN));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.ROOK));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.BISHOP));
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, ChessPiece.PieceType.KNIGHT));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.QUEEN));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.ROOK));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.BISHOP));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, ChessPiece.PieceType.KNIGHT));
                     } else {
                         // 未到达升变行
-                        possibleMoves.add(new ChessMove(myPosition, moveonestep, null));
+                        possibleMoves.add(new ChessMove(myPosition, moveOneStep, null));
 
                         // 起始两步(黑兵在第7行)
-                        if (PawnRow == 7) {
-                            int movetwostepRow = rowonestep + dir; // row-2
-                            ChessPosition moveTwoStep = new ChessPosition(movetwostepRow, PawnCol);
+                        if (pawnRow == 7) {
+                            int movetwostepRow = rowOneStep + dir; // row-2
+                            ChessPosition moveTwoStep = new ChessPosition(movetwostepRow, pawnCol);
                             if (border(moveTwoStep)) {
                                 ChessPiece occupantTwoStep = board.getPiece(moveTwoStep);
                                 if (occupantTwoStep == null) {
@@ -90,14 +90,14 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
 
         // 斜着吃子
         // 左前方
-        int leftCol = PawnCol - 1;
+        int leftCol = pawnCol - 1;
         if (leftCol >= 1) {
-            ChessPosition leftCapturePos = new ChessPosition(rowonestep, leftCol);
+            ChessPosition leftCapturePos = new ChessPosition(rowOneStep, leftCol);
             if (border(leftCapturePos)) {
                 ChessPiece occupant = board.getPiece(leftCapturePos);
                 if (occupant != null && occupant.getTeamColor() != myColor) {
                     if (myColor == ChessGame.TeamColor.WHITE) {
-                        if (rowonestep == 8) {
+                        if (rowOneStep == 8) {
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.QUEEN));
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.ROOK));
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.BISHOP));
@@ -107,7 +107,7 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
                         }
                     }
                     if (myColor == ChessGame.TeamColor.BLACK) {
-                        if (rowonestep == 1) {
+                        if (rowOneStep == 1) {
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.QUEEN));
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.ROOK));
                             possibleMoves.add(new ChessMove(myPosition, leftCapturePos, ChessPiece.PieceType.BISHOP));
@@ -121,15 +121,15 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
         }
 
         // 右前方
-        int rightCol = PawnCol + 1;
+        int rightCol = pawnCol + 1;
         if (rightCol <= 8) { // 棋盘范围
-            ChessPosition rightCapturePos = new ChessPosition(rowonestep, rightCol);
+            ChessPosition rightCapturePos = new ChessPosition(rowOneStep, rightCol);
             if (border(rightCapturePos)) {
                 ChessPiece occupant = board.getPiece(rightCapturePos);
                 if (occupant != null && occupant.getTeamColor() != myColor) {
                     // 升变
                     if (myColor == ChessGame.TeamColor.WHITE) {
-                        if (rowonestep == 8) {
+                        if (rowOneStep == 8) {
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.QUEEN));
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.ROOK));
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.BISHOP));
@@ -139,7 +139,7 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
                         }
                     }
                     if (myColor == ChessGame.TeamColor.BLACK) {
-                        if (rowonestep == 1) {
+                        if (rowOneStep == 1) {
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.QUEEN));
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.ROOK));
                             possibleMoves.add(new ChessMove(myPosition, rightCapturePos, ChessPiece.PieceType.BISHOP));

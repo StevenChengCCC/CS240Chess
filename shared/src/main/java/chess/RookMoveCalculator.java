@@ -16,12 +16,12 @@ public class RookMoveCalculator implements PieceMovesCalculator {
         int rookCol = myPosition.getColumn();
 
         // 车的4个方向
-        int[] RowDir = {-1, 1, 0, 0};
-        int[] ColDir = {0, 0, -1, 1};
+        int[] rowDir = {-1, 1, 0, 0};
+        int[] colDir = {0, 0, -1, 1};
 
-        for (int i = 0; i < RowDir.length; i++) {
-            int newRow = rookRow + RowDir[i];
-            int newCol = rookCol + ColDir[i];
+        for (int i = 0; i < rowDir.length; i++) {
+            int newRow = rookRow + rowDir[i];
+            int newCol = rookCol + colDir[i];
 
             // 沿着方向一直走
             while (true) {
@@ -42,8 +42,8 @@ public class RookMoveCalculator implements PieceMovesCalculator {
                     break; // 不管是敌方还是我方都停止
                 }
                 // 往下一个格子
-                newRow += RowDir[i];
-                newCol += ColDir[i];
+                newRow += rowDir[i];
+                newCol += colDir[i];
             }
         }
         return possibleMoves;

@@ -16,12 +16,12 @@ public class QueenMoveCalculator implements PieceMovesCalculator {
         int queenCol = myPosition.getColumn();
 
         // 皇后8个方向
-        int[] RowDir = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] ColDir = {-1, 0, 1, -1, 1, -1, 0, 1};
+        int[] rowDir = {-1, -1, -1, 0, 0, 1, 1, 1};
+        int[] colDir = {-1, 0, 1, -1, 1, -1, 0, 1};
 
-        for (int i = 0; i < RowDir.length; i++) {
-            int newRow = queenRow + RowDir[i];
-            int newCol = queenCol + ColDir[i];
+        for (int i = 0; i < rowDir.length; i++) {
+            int newRow = queenRow + rowDir[i];
+            int newCol = queenCol + colDir[i];
 
             // 不断往该方向走
             while (true) {
@@ -42,8 +42,8 @@ public class QueenMoveCalculator implements PieceMovesCalculator {
                     break; // 不管是敌方还是我方都停止
                 }
                 // 往下一个格子
-                newRow += RowDir[i];
-                newCol += ColDir[i];
+                newRow += rowDir[i];
+                newCol += colDir[i];
             }
         }
         return possibleMoves;

@@ -16,12 +16,12 @@ public class BishopMoveCalculator implements PieceMovesCalculator {
         int bishopCol = myPosition.getColumn();
 
         // 象的4个方向
-        int[] RowDir = {-1, -1, 1, 1};
-        int[] ColDir = {-1, 1, -1, 1};
+        int[] rowDir = {-1, -1, 1, 1};
+        int[] colDir = {-1, 1, -1, 1};
 
-        for (int i = 0; i < RowDir.length; i++) {
-            int newRow = bishopRow + RowDir[i];
-            int newCol = bishopCol + ColDir[i];
+        for (int i = 0; i < rowDir.length; i++) {
+            int newRow = bishopRow + rowDir[i];
+            int newCol = bishopCol + colDir[i];
 
             // 沿着方向一直走
             while (true) {
@@ -42,8 +42,8 @@ public class BishopMoveCalculator implements PieceMovesCalculator {
                     break; // 不管是敌方还是我方都停止
                 }
                 // 往下一个格子
-                newRow += RowDir[i];
-                newCol += ColDir[i];
+                newRow += rowDir[i];
+                newCol += colDir[i];
             }
         }
         return possibleMoves;

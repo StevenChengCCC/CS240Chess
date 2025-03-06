@@ -2,7 +2,6 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 public class KnightMoveCalculator implements PieceMovesCalculator{
 
@@ -12,15 +11,15 @@ public class KnightMoveCalculator implements PieceMovesCalculator{
         // 从棋盘获得当前子的信息(阵营)
         ChessPiece Knight = board.getPiece(myPosition);
         ChessGame.TeamColor myColor = Knight.getTeamColor();
-        int KnightRow = myPosition.getRow();
-        int KnightCol = myPosition.getColumn();
+        int knightRow = myPosition.getRow();
+        int knightCol = myPosition.getColumn();
         //可能走的8个位置
-        int[] NewRow = {-1, 1, -2, 2, -2, 2, -1, 1};
-        int[] NewCol = {-2, -2, -1, -1, 1, 1, 2, 2};
+        int[] rowDir = {-1, 1, -2, 2, -2, 2, -1, 1};
+        int[] colDir = {-2, -2, -1, -1, 1, 1, 2, 2};
         //row和col长度一样
-        for (int i = 0; i < NewRow.length; i++) {
-            int newRow = KnightRow + NewRow[i];
-            int newCol = KnightCol + NewCol[i];
+        for (int i = 0; i < rowDir.length; i++) {
+            int newRow = knightRow + rowDir[i];
+            int newCol = knightCol + colDir[i];
             ChessPosition newPosition = new ChessPosition(newRow, newCol);
             // 判断棋盘边界
             if (border(newPosition)) {
