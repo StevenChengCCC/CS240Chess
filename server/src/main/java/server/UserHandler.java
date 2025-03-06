@@ -43,7 +43,7 @@ public class UserHandler implements Route {
                 return gson.toJson(new ErrorMessage("Error: not found"));
             }
         } catch (Exception e) {
-            response.status(500);
+            response.status(403);
             return gson.toJson(new ErrorMessage("Error: " + e.getMessage()));
         }
     }
