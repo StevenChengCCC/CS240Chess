@@ -14,22 +14,22 @@ public class KingMoveCalculator implements PieceMovesCalculator {
         int kingRow = myPosition.getRow();
         int kingCol = myPosition.getColumn();
         //可能走的8个位置
-        int[] NewRow = {-1, 0, 1, -1, 1, -1, 0, 1};
-        int[] NewCol = {-1, -1, -1, 0, 0, 1, 1, 1};
+        int[] rowDir = {-1, 0, 1, -1, 1, -1, 0, 1};
+        int[] colDir = {-1, -1, -1, 0, 0, 1, 1, 1};
         //row和col长度一样
-        for (int i = 0; i < NewRow.length; i++) {
-            int newRow = kingRow + NewRow[i];
-            int newCol = kingCol + NewCol[i];
+        for (int i = 0; i < rowDir.length; i++) {
+            int newRow = kingRow + rowDir[i];
+            int newCol = kingCol + colDir[i];
             ChessPosition newPosition = new ChessPosition(newRow, newCol);
             // 判断棋盘边界
             if (border(newPosition)) {
-                ChessPiece NewP = board.getPiece(newPosition);
-                if (NewP == null) {
+                ChessPiece newP = board.getPiece(newPosition);
+                if (newP == null) {
                     // 判断空位
                     possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                 } else {
                     // 判断颜色
-                    if (NewP.getTeamColor() != myColor) {
+                    if (newP.getTeamColor() != myColor) {
                         possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                     }
                 }

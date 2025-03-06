@@ -85,12 +85,12 @@ public class ChessGame {
 
     public void makeMove(ChessMove move) throws InvalidMoveException {
         // 获取合法走位
-        Collection<ChessMove> AbleToMoves = validMoves(move.getStartPosition());
-        if (AbleToMoves == null) {
+        Collection<ChessMove> ableToMoves = validMoves(move.getStartPosition());
+        if (ableToMoves == null) {
             throw new InvalidMoveException("No valid moves.");
         }
         // 正确的走棋方
-        if (AbleToMoves.contains(move) && getTeamTurn() == board.getPiece(move.getStartPosition()).getTeamColor()) {
+        if (ableToMoves.contains(move) && getTeamTurn() == board.getPiece(move.getStartPosition()).getTeamColor()) {
             ChessPiece pieceToMove = board.getPiece(move.getStartPosition());
             // 如果有升变需求
             if (move.getPromotionPiece() != null) {
@@ -122,11 +122,11 @@ public class ChessGame {
         //遍历敌方所有棋子，看它们是否能吃王的位置
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
-                ChessPiece EnemyPosition = board.getPiece(new ChessPosition(row, col));
-                if (EnemyPosition == null || EnemyPosition.getTeamColor() == teamColor) {
+                ChessPiece enemyPosition = board.getPiece(new ChessPosition(row, col));
+                if (enemyPosition == null || enemyPosition.getTeamColor() == teamColor) {
                     continue; // 检查是否为enemy
                 }
-                Collection<ChessMove> enemyMoves = EnemyPosition.pieceMoves(board, new ChessPosition(row, col));
+                Collection<ChessMove> enemyMoves = enemyPosition.pieceMoves(board, new ChessPosition(row, col));
                 // 判断能否攻击到king
                 if (enemyMoves != null) {
                     for (ChessMove move : enemyMoves) {
@@ -158,12 +158,12 @@ public class ChessGame {
     private boolean isThereVaildMove(TeamColor teamColor){
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
-                ChessPosition StalematePosition = new ChessPosition(row, col);
-                ChessPiece piece = board.getPiece(StalematePosition);
+                ChessPosition stalematePosition = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(stalematePosition);
                 //如果为空并且颜色不对
                 if (piece != null && piece.getTeamColor() == teamColor) {
                     //如果没有可以走的路线
-                    Collection<ChessMove> moves = validMoves(StalematePosition);
+                    Collection<ChessMove> moves = validMoves(stalematePosition);
                     if (moves != null && !moves.isEmpty()) {
                         return false;
                     }
@@ -172,12 +172,12 @@ public class ChessGame {
         }
         return true;
     }
-    private ChessPosition findKingPosition(ChessBoard Board,
+    private ChessPosition findKingPosition(ChessBoard board,
                                            TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
-                ChessPiece piece = Board.getPiece(position);
+                ChessPiece piece = board.getPiece(position);
                 if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
                     return position;
                 }

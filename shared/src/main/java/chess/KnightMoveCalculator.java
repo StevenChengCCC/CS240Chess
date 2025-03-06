@@ -9,8 +9,8 @@ public class KnightMoveCalculator implements PieceMovesCalculator{
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         Collection<ChessMove> possibleMoves = new ArrayList<>();
         // 从棋盘获得当前子的信息(阵营)
-        ChessPiece Knight = board.getPiece(myPosition);
-        ChessGame.TeamColor myColor = Knight.getTeamColor();
+        ChessPiece knight = board.getPiece(myPosition);
+        ChessGame.TeamColor myColor = knight.getTeamColor();
         int knightRow = myPosition.getRow();
         int knightCol = myPosition.getColumn();
         //可能走的8个位置
@@ -23,13 +23,13 @@ public class KnightMoveCalculator implements PieceMovesCalculator{
             ChessPosition newPosition = new ChessPosition(newRow, newCol);
             // 判断棋盘边界
             if (border(newPosition)) {
-                ChessPiece NewP = board.getPiece(newPosition);
-                if (NewP == null) {
+                ChessPiece newP = board.getPiece(newPosition);
+                if (newP == null) {
                     // 判断空位
                     possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                 } else {
                     // 判断颜色
-                    if (NewP.getTeamColor() != myColor) {
+                    if (newP.getTeamColor() != myColor) {
                         possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                     }
                 }

@@ -10,8 +10,8 @@ public class PawnMoveCalculator implements PieceMovesCalculator {
         Collection<ChessMove> possibleMoves = new ArrayList<>();
 
         // 获取当前兵
-        ChessPiece Pawn = board.getPiece(myPosition);
-        ChessGame.TeamColor myColor = Pawn.getTeamColor();
+        ChessPiece pawn = board.getPiece(myPosition);
+        ChessGame.TeamColor myColor = pawn.getTeamColor();
 
         int pawnRow = myPosition.getRow();
         int pawnCol = myPosition.getColumn();

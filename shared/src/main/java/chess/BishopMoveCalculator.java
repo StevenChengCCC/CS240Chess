@@ -30,13 +30,13 @@ public class BishopMoveCalculator implements PieceMovesCalculator {
                 if (!border(newPosition)) {
                     break;
                 }
-                ChessPiece NewP = board.getPiece(newPosition);
-                if (NewP == null) {
+                ChessPiece newP = board.getPiece(newPosition);
+                if (newP == null) {
                     // 空位
                     possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                 } else {
                     // 检测颜色
-                    if (NewP.getTeamColor() != myColor) {
+                    if (newP.getTeamColor() != myColor) {
                         possibleMoves.add(new ChessMove(myPosition, newPosition, null));
                     }
                     break; // 不管是敌方还是我方都停止
