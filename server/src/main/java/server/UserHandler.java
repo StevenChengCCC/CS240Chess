@@ -26,7 +26,6 @@ public class UserHandler implements Route {
     }
     @Override
     public Object handle(Request request, Response response) {
-        // For example, path might be /user or /session
         String path = request.pathInfo();
         String method = request.requestMethod(); // GET, POST, DELETE
         response.type("application/json");
