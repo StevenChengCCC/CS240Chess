@@ -121,7 +121,6 @@ public class ChessGame {
         }
         return isKingUnderAttack(kingPosition, teamColor);
     }
-
     private boolean isKingUnderAttack(ChessPosition kingPosition, TeamColor teamColor) {
         //遍历敌方所有棋子，看它们是否能吃王的位置
         for (int row = 1; row <= 8; row++) {
@@ -130,19 +129,27 @@ public class ChessGame {
                 if (enemyPosition == null || enemyPosition.getTeamColor() == teamColor) {
                     continue; // 检查是否为enemy
                 }
-                Collection<ChessMove> enemyMoves = enemyPosition.pieceMoves(board, new ChessPosition(row, col));
-                // 判断能否攻击到king
-                if (enemyMoves != null) {
-                    for (ChessMove move : enemyMoves) {
-                        if (move.getEndPosition().equals(kingPosition)) {
-                            return true;
-                        }
-                    }
+                if (enemyCanAttackKing(enemyPosition, kingPosition, new ChessPosition(row, col))) {
+                    return true;
                 }
             }
         }
         return false;
     }
+
+    private boolean enemyCanAttackKing(ChessPiece enemyPosition, ChessPosition kingPosition, ChessPosition currentPosition) {
+        Collection<ChessMove> enemyMoves = enemyPosition.pieceMoves(board, currentPosition);
+        // 判断能否攻击到king
+        if (enemyMoves != null) {
+            for (ChessMove move : enemyMoves) {
+                if (move.getEndPosition().equals(kingPosition)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
 
 
