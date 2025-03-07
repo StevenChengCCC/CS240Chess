@@ -24,103 +24,145 @@ public class UserHandler implements Route {
         this.userDAO = userDAO;
         this.authDAO = authDAO;
     }
+
     @Override
     public Object handle(Request request, Response response) {
-        String path = request.pathInfo();
-        String method = request.requestMethod(); // GET, POST, DELETE
         response.type("application/json");
+        String path = request.pathInfo();
+        String method = request.requestMethod();
 
         try {
-            if ("/user".equals(path) && "POST".equals(method)) {
-                return handleRegister(request, response);
-            } else if ("/session".equals(path) && "POST".equals(method)) {
-                return handleLogin(request, response);
-            } else if ("/session".equals(path) && "DELETE".equals(method)) {
-                return handleLogout(request, response);
-            } else {
-                response.status(200);
-                return gson.toJson(new ErrorMessage("Error: not found"));
+            if (path.equals("/user") && method.equals("POST")) {
+                return registerUser(request, response);
             }
+            if (path.equals("/session") && method.equals("POST")) {
+                return loginUser(request, response);
+            }
+            if (path.equals("/session") && method.equals("DELETE")) {
+                return logoutUser(request, response);
+            }
+            // Wrong path or method
+            response.status(200);
+            String errorMsg = "Error: not found";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
+
+        } catch (DataAccessException e) {
+            String msg = e.getMessage();
+            if (msg.equals("bad request")) {
+                response.status(400);
+                String errorMsg = "Error: bad request";
+                ErrorMessage error = new ErrorMessage(errorMsg);
+                String jsonError = gson.toJson(error);
+                return jsonError;
+            }
+            if (msg.equals("unauthorized")) {
+                response.status(401);
+                String errorMsg = "Error: unauthorized";
+                ErrorMessage error = new ErrorMessage(errorMsg);
+                String jsonError = gson.toJson(error);
+                return jsonError;
+            }
+            response.status(403);
+            String errorMsg = "Error: " + msg;
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         } catch (Exception e) {
             response.status(403);
-            return gson.toJson(new ErrorMessage("Error: " + e.getMessage()));
+            String errorMsg = "Error: " + e.getMessage();
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
     }
 
-    private Object handleRegister(Request request, Response response) throws DataAccessException {
-        // parse JSON
+    private Object registerUser(Request request, Response response) throws DataAccessException {
         RegisterBody body = gson.fromJson(request.body(), RegisterBody.class);
         if (body == null || body.username == null || body.password == null) {
             response.status(400);
-            return gson.toJson(new ErrorMessage("Error: bad request"));
+            String errorMsg = "Error: bad request";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
-        // create the user
-        UserData newUser = new UserData(body.username, body.password, body.email);
-        //already exists
-        userDAO.createUser(newUser);
 
-        // create token
+        String username = body.username;
+        String password = body.password;
+        String email = body.email;
+        UserData user = new UserData(username, password, email);
+        userDAO.createUser(user);
+
         String token = UUID.randomUUID().toString();
-        AuthData auth = new AuthData(token, body.username);
+        AuthData auth = new AuthData(token, username);
         authDAO.createAuth(auth);
 
-        // success
         response.status(200);
-        var result = new RegisterResult(body.username, token);
-        return gson.toJson(result);
+        RegisterResult result = new RegisterResult(username, token);
+        String jsonResult = gson.toJson(result);
+        return jsonResult;
     }
 
-    private Object handleLogin(Request request, Response response) throws DataAccessException {
+    private Object loginUser(Request request, Response response) throws DataAccessException {
         LoginBody body = gson.fromJson(request.body(), LoginBody.class);
         if (body == null || body.username == null || body.password == null) {
             response.status(400);
-            return gson.toJson(new ErrorMessage("Error: bad request"));
+            String errorMsg = "Error: bad request";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
 
-        // get user
-        UserData user = userDAO.getUser(body.username);
-        if (user == null || !user.password().equals(body.password)) {
-            // unauthorized
+        String username = body.username;
+        String password = body.password;
+        UserData user = userDAO.getUser(username);
+        if (user == null || !user.password().equals(password)) {
             response.status(401);
-            return gson.toJson(new ErrorMessage("Error: unauthorized"));
+            String errorMsg = "Error: unauthorized";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
-        // generate token
+
         String token = UUID.randomUUID().toString();
-        AuthData auth = new AuthData(token, user.username());
+        AuthData auth = new AuthData(token, username);
         authDAO.createAuth(auth);
 
         response.status(200);
-        var result = new LoginResult(user.username(), token);
-        return gson.toJson(result);
+        LoginResult result = new LoginResult(username, token);
+        String jsonResult = gson.toJson(result);
+        return jsonResult;
     }
 
-    private Object handleLogout(Request request, Response response) throws DataAccessException {
-        // get auth token from header
+    private Object logoutUser(Request request, Response response) throws DataAccessException {
         String token = request.headers("authorization");
         if (token == null || token.isBlank()) {
-            // unauthorized
             response.status(401);
-            return gson.toJson(new ErrorMessage("Error: unauthorized"));
+            String errorMsg = "Error: unauthorized";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
-        // see if token exists
+
         AuthData auth = authDAO.getAuth(token);
         if (auth == null) {
-            // unauthorized
             response.status(401);
-            return gson.toJson(new ErrorMessage("Error: unauthorized"));
+            String errorMsg = "Error: unauthorized";
+            ErrorMessage error = new ErrorMessage(errorMsg);
+            String jsonError = gson.toJson(error);
+            return jsonError;
         }
-        // delete the token
-        authDAO.deleteAuth(token);
-        // success
-        response.status(200);
-        return "{}";
-    }
-    record ErrorMessage(String message) {}
 
-    // Request bodies
+        authDAO.deleteAuth(token);
+        response.status(200);
+        String emptyJson = "{}";
+        return emptyJson;
+    }
+
+    record ErrorMessage(String message) {}
     record RegisterBody(String username, String password, String email) {}
     record LoginBody(String username, String password) {}
-    // Response bodies
     record RegisterResult(String username, String authToken) {}
     record LoginResult(String username, String authToken) {}
 }

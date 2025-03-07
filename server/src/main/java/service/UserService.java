@@ -7,60 +7,90 @@ import model.AuthData;
 import model.UserData;
 import java.util.UUID;
 
-// service for register, login, and  logout
-
 public class UserService {
-    private final UserDAO userDAO;
-    private final AuthDAO authDAO;
+    // Our data access objects
+    private UserDAO myUserDAO;
+    private AuthDAO myAuthDAO;
 
+    // Constructor to set up the DAOs
     public UserService(UserDAO userDAO, AuthDAO authDAO) {
-        this.userDAO = userDAO;
-        this.authDAO = authDAO;
+        this.myUserDAO = userDAO;
+        this.myAuthDAO = authDAO;
     }
 
-    public AuthData register(String username, String password, String email)
-            throws DataAccessException {
-        // check if the password and username is null
-        if (username == null || password == null) {
-            throw new DataAccessException("bad request: username or password is blank");
+    // Register a new user
+    public AuthData register(String username, String password, String email) throws DataAccessException {
+        // Check if username or password is missing
+        if (username == null) {
+            throw new DataAccessException("bad request: username is blank");
         }
-        // Create the user
-        var newUser = new UserData(username, password, email);
-        userDAO.createUser(newUser);
+        if (password == null) {
+            throw new DataAccessException("bad request: password is blank");
+        }
 
-        // Create auth token
-        String token = UUID.randomUUID().toString();
-        var auth = new AuthData(token, username);
-        authDAO.createAuth(auth);
+        // Make a new user object
+        UserData newUser = new UserData(username, password, email);
+        // Save the user in the database
+        myUserDAO.createUser(newUser);
 
-        return auth;
+        // Make a new random token
+        String newToken = UUID.randomUUID().toString();
+        // Make an auth object with the token and username
+        AuthData authStuff = new AuthData(newToken, username);
+        // Save the auth in the database
+        myAuthDAO.createAuth(authStuff);
+
+        // Return the auth object
+        return authStuff;
     }
+
+    // Log in a user
     public AuthData login(String username, String password) throws DataAccessException {
-        // check if the password and username is null
-        if (username == null || password == null) {
-            throw new DataAccessException("bad request: username or password is blank");
+        // Check if username or password is missing
+        if (username == null) {
+            throw new DataAccessException("bad request: username is blank");
         }
-        // check if authorized
-        var existingUser = userDAO.getUser(username);
-        if (existingUser == null || existingUser.password() != password) {
+        if (password == null) {
+            throw new DataAccessException("bad request: password is blank");
+        }
+
+        // Try to find the user in the database
+        UserData foundUser = myUserDAO.getUser(username);
+        // Check if user exists and password matches
+        if (foundUser == null) {
             throw new DataAccessException("unauthorized: invalid username/password");
         }
-        String token = UUID.randomUUID().toString();
-        var auth = new AuthData(token, username);
-        authDAO.createAuth(auth);
+        String storedPassword = foundUser.password();
+        if (!storedPassword.equals(password)) {
+            throw new DataAccessException("unauthorized: invalid username/password");
+        }
 
-        return auth;
+        // Make a new random token
+        String newToken = UUID.randomUUID().toString();
+        // Make an auth object
+        AuthData authStuff = new AuthData(newToken, username);
+        // Save the auth in the database
+        myAuthDAO.createAuth(authStuff);
+
+        // Return the auth object
+        return authStuff;
     }
 
+    // Log out a user
     public void logout(String token) throws DataAccessException {
-        // check if the password and username is null
+        // Check if token is missing
         if (token == null) {
             throw new DataAccessException("unauthorized: missing token");
         }
-        var existingAuth = authDAO.getAuth(token);
-        if (existingAuth == null) {
+
+        // Look for the token in the database
+        AuthData foundAuth = myAuthDAO.getAuth(token);
+        // Check if token exists
+        if (foundAuth == null) {
             throw new DataAccessException("unauthorized: token not found");
         }
-        authDAO.deleteAuth(token);
+
+        // Remove the token from the database
+        myAuthDAO.deleteAuth(token);
     }
 }

@@ -10,85 +10,131 @@ import java.util.List;
 import java.util.Random;
 
 public class GameService {
-    private final AuthDAO authDAO;
-    private final GameDAO gameDAO;
-    private final Random random = new Random();
+    // Our data access objects and random number maker
+    private AuthDAO myAuthDAO;
+    private GameDAO myGameDAO;
+    private Random myRandom = new Random();
 
+    // Constructor to set up the DAOs
     public GameService(AuthDAO authDAO, GameDAO gameDAO) {
-        this.authDAO = authDAO;
-        this.gameDAO = gameDAO;
+        this.myAuthDAO = authDAO;
+        this.myGameDAO = gameDAO;
     }
 
+    // List all games
     public List<GameData> listGames(String token) throws DataAccessException {
+        // Check if token is missing
         if (token == null) {
             throw new DataAccessException("unauthorized");
         }
-        AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {
+
+        // Look for the token in the database
+        AuthData authStuff = myAuthDAO.getAuth(token);
+        // Check if token is valid
+        if (authStuff == null) {
             throw new DataAccessException("unauthorized");
         }
-        List<GameData> games = gameDAO.listGames();
-        return games;
+
+        // Get the list of games
+        List<GameData> allGames = myGameDAO.listGames();
+        // Return the games
+        return allGames;
     }
 
+    // Create a new game
     public int createGame(String token, String gameName) throws DataAccessException {
+        // Check if token is missing
         if (token == null) {
             throw new DataAccessException("unauthorized");
         }
-        AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {
+
+        // Look for the token in the database
+        AuthData authStuff = myAuthDAO.getAuth(token);
+        // Check if token is valid
+        if (authStuff == null) {
             throw new DataAccessException("unauthorized");
         }
-        if (gameName == null || gameName.isBlank()) {
+
+        // Check if game name is missing or empty
+        if (gameName == null) {
+            throw new DataAccessException("bad request");
+        }
+        if (gameName.isBlank()) {
             throw new DataAccessException("bad request");
         }
 
-        int gameID = 1000 + random.nextInt(9000);
-        GameData checkGame = gameDAO.getGame(gameID);
+        // Make a random game ID between 1000 and 9999
+        int newGameID = 1000 + myRandom.nextInt(9000);
+        // Check if this ID is already used
+        GameData checkGame = myGameDAO.getGame(newGameID);
         while (checkGame != null) {
-            gameID = 1000 + random.nextInt(9000);
-            checkGame = gameDAO.getGame(gameID);
+            newGameID = 1000 + myRandom.nextInt(9000);
+            checkGame = myGameDAO.getGame(newGameID);
         }
 
-        ChessGame chessGame = new ChessGame();
-        GameData newGame = new GameData(gameID, null, null, gameName, chessGame);
-        gameDAO.createGame(newGame);
-        return gameID;
+        // Make a new chess game
+        ChessGame newChessGame = new ChessGame();
+        GameData newGame = new GameData(newGameID, null, null, gameName, newChessGame);
+        // Save the game in the database
+        myGameDAO.createGame(newGame);
+        return newGameID;
     }
 
+    // Join a game
     public void joinGame(String token, String playerColor, Integer gameID) throws DataAccessException {
+        // Check if token is missing
         if (token == null) {
             throw new DataAccessException("unauthorized");
         }
-        AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {
+
+        // Look for the token in the database
+        AuthData authStuff = myAuthDAO.getAuth(token);
+        // Check if token is valid
+        if (authStuff == null) {
             throw new DataAccessException("unauthorized");
         }
-        if (playerColor == null || gameID == null) {
+
+        // Check if color or game ID is missing
+        if (playerColor == null) {
+            throw new DataAccessException("bad request");
+        }
+        if (gameID == null) {
             throw new DataAccessException("bad request");
         }
 
-        GameData game = gameDAO.getGame(gameID);
-        if (game == null) {
+        // Look for the game in the database
+        GameData foundGame = myGameDAO.getGame(gameID);
+        // Check if game exists
+        if (foundGame == null) {
             throw new DataAccessException("bad request");
         }
 
+        // Make the color uppercase to check it
         String upperColor = playerColor.toUpperCase();
+        String username = authStuff.username();
+
+        // If player wants to be white
         if (upperColor.equals("WHITE")) {
-            if (game.whiteUsername() != null) {
+            String whitePlayer = foundGame.whiteUsername();
+            if (whitePlayer != null) {
                 throw new DataAccessException("already taken");
             }
-            GameData updatedGame = new GameData(game.gameID(), auth.username(), game.blackUsername(), game.gameName(), game.game());
-            gameDAO.updateGame(updatedGame);
+            // Make a new game object with the player as white
+            GameData updatedGame = new GameData(gameID, username, foundGame.blackUsername(), foundGame.gameName(), foundGame.game());
+            myGameDAO.updateGame(updatedGame);
         }
-        if (upperColor.equals("BLACK")) {
-            if (game.blackUsername() != null) {
+        // If player wants to be black
+        else if (upperColor.equals("BLACK")) {
+            String blackPlayer = foundGame.blackUsername();
+            if (blackPlayer != null) {
                 throw new DataAccessException("already taken");
             }
-            GameData updatedGame = new GameData(game.gameID(), game.whiteUsername(), auth.username(), game.gameName(), game.game());
-            gameDAO.updateGame(updatedGame);
+            // Make a new game object with the player as black
+            GameData updatedGame = new GameData(gameID, foundGame.whiteUsername(), username, foundGame.gameName(), foundGame.game());
+            myGameDAO.updateGame(updatedGame);
         }
-        if (!upperColor.equals("WHITE") && !upperColor.equals("BLACK")) {
+        // If color is not white or black
+        else {
             throw new DataAccessException("bad request");
         }
     }
