@@ -119,6 +119,10 @@ public class ChessGame {
             //如果王不存在就是被将军了
             return true;
         }
+        return isKingUnderAttack(kingPosition, teamColor);
+    }
+
+    private boolean isKingUnderAttack(ChessPosition kingPosition, TeamColor teamColor) {
         //遍历敌方所有棋子，看它们是否能吃王的位置
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
@@ -139,6 +143,7 @@ public class ChessGame {
         }
         return false;
     }
+
 
 
     public boolean isInCheckmate(TeamColor teamColor) {

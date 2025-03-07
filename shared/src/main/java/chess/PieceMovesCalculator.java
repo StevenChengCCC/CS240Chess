@@ -12,7 +12,8 @@ public interface PieceMovesCalculator {
         return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 
-    default void tryAddMove(Collection<ChessMove> possibleMoves, ChessBoard board, ChessPosition from, ChessPosition to, ChessGame.TeamColor myColor) {
+    default void tryAddMove(Collection<ChessMove> possibleMoves, ChessBoard board,
+                            ChessPosition from, ChessPosition to, ChessGame.TeamColor myColor) {
         if (border(to)) {
             ChessPiece newP = board.getPiece(to);
             if (newP == null || newP.getTeamColor() != myColor) {//检查颜色
@@ -62,19 +63,19 @@ public interface PieceMovesCalculator {
         return possibleMoves;
     }
     // 用于处理Pawn走法时遇到升变的情况
-    default void addPawnMove(Collection<ChessMove> PossibleMoves,
+    default void addPawnMove(Collection<ChessMove> possibleMoves,
                              ChessBoard board,
                              ChessPosition myPosition,
                              ChessPosition newPawnPosition,
-                             ChessGame.TeamColor PawnColor) {
-        if ((newPawnPosition.getRow() == 8 && PawnColor == ChessGame.TeamColor.WHITE) ||
-                (newPawnPosition.getRow() == 1 && PawnColor == ChessGame.TeamColor.BLACK)) {
-            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.ROOK));
-            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.BISHOP));
-            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.QUEEN));
-            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.KNIGHT));
+                             ChessGame.TeamColor pawnColor) {
+        if ((newPawnPosition.getRow() == 8 && pawnColor == ChessGame.TeamColor.WHITE) ||
+                (newPawnPosition.getRow() == 1 && pawnColor == ChessGame.TeamColor.BLACK)) {
+            possibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.ROOK));
+            possibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.BISHOP));
+            possibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.QUEEN));
+            possibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.KNIGHT));
         } else {
-            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, null));
+            possibleMoves.add(new ChessMove(myPosition, newPawnPosition, null));
         }
     }
 }
