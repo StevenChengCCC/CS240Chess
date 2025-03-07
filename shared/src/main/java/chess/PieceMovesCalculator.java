@@ -61,4 +61,20 @@ public interface PieceMovesCalculator {
         }
         return possibleMoves;
     }
+    // 用于处理Pawn走法时遇到升变的情况
+    default void addPawnMove(Collection<ChessMove> PossibleMoves,
+                             ChessBoard board,
+                             ChessPosition myPosition,
+                             ChessPosition newPawnPosition,
+                             ChessGame.TeamColor PawnColor) {
+        if ((newPawnPosition.getRow() == 8 && PawnColor == ChessGame.TeamColor.WHITE) ||
+                (newPawnPosition.getRow() == 1 && PawnColor == ChessGame.TeamColor.BLACK)) {
+            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.ROOK));
+            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.BISHOP));
+            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.QUEEN));
+            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, ChessPiece.PieceType.KNIGHT));
+        } else {
+            PossibleMoves.add(new ChessMove(myPosition, newPawnPosition, null));
+        }
+    }
 }
