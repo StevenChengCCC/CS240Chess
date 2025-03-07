@@ -40,7 +40,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Register Negative: Username already taken")
-    void testRegisterFail_UserExists() throws DataAccessException {
+    void testRegisterFailUserExists() throws DataAccessException {
         // First registration is successful
         userService.register("bob", "bobspassword", "bob@xyz.com");
 
@@ -53,7 +53,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Register Negative: Missing username")
-    void testRegisterFail_MissingUsername() {
+    void testRegisterFailMissingUsername() {
         // Expect an exception because the username is null
         assertThrows(DataAccessException.class, () -> {
             userService.register(null, "someramdompassword", "neil@xyz.com");
@@ -62,7 +62,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Register Negative: Missing password")
-    void testRegisterFail_MissingPassword() {
+    void testRegisterFailMissingPassword() {
         // Expect an exception because the password is null 王华
         assertThrows(DataAccessException.class, () -> {
             userService.register("charliewang", null, "charlie@xyz.com");
@@ -86,7 +86,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Login Negative: Wrong password")
-    void testLoginFail_WrongPassword() throws DataAccessException {
+    void testLoginFailWrongPassword() throws DataAccessException {
         // register
         userService.register("maniubi", "niubi", null);
 
@@ -98,7 +98,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Login Negative: Username does not exist")
-    void testLoginFail_NoSuchUser() {
+    void testLoginFailNoSuchUser() {
         // user not registered
         assertThrows(DataAccessException.class, () -> {
             userService.login("nonexistent", "nopass");
@@ -123,14 +123,14 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("Logout Negative: Missing token")
-    void testLogoutFail_MissingToken() {
+    void testLogoutFailMissingToken() {
         // token is null => throws exception
         assertThrows(DataAccessException.class, () -> userService.logout(null));
     }
 
     @Test
     @DisplayName("Logout Negative: Invalid token")
-    void testLogoutFail_InvalidToken() {
+    void testLogoutFailInvalidToken() {
         // try logging out with a made-up token
         assertThrows(DataAccessException.class, () -> userService.logout("jhdlsfkjghkfjasdfk"));
     }

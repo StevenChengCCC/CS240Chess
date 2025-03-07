@@ -34,7 +34,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("ListGames Positive: Valid token returns empty list initially")
-    void testListGamesSuccess_Empty() throws DataAccessException {
+    void testListGamesSuccessEmpty() throws DataAccessException {
         // first register => get token
         AuthData auth = userService.register("alice", "pass", null);
 
@@ -45,7 +45,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("ListGames Negative: Null token")
-    void testListGamesFail_NullToken() {
+    void testListGamesFailNullToken() {
         assertThrows(DataAccessException.class, () -> {
             gameService.listGames(null);
         });
@@ -53,7 +53,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("ListGames Negative: Invalid token")
-    void testListGamesFail_InvalidToken() {
+    void testListGamesFailInvalidToken() {
         assertThrows(DataAccessException.class, () -> {
             gameService.listGames("bogus_token_555");
         });
@@ -78,7 +78,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("CreateGame Negative: Missing token")
-    void testCreateGameFail_MissingToken() {
+    void testCreateGameFailMissingToken() {
         assertThrows(DataAccessException.class, () -> {
             gameService.createGame(null, "NoTokenGame");
         });
@@ -86,7 +86,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("CreateGame Negative: Invalid token")
-    void testCreateGameFail_InvalidToken() {
+    void testCreateGameFailInvalidToken() {
         assertThrows(DataAccessException.class, () -> {
             gameService.createGame("invalid_token", "AnotherGame");
         });
@@ -94,7 +94,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("CreateGame Negative: Blank game name")
-    void testCreateGameFail_BlankGameName() throws DataAccessException {
+    void testCreateGameFailBlankGameName() throws DataAccessException {
         AuthData auth = userService.register("steven", "carolpass", null);
 
         assertThrows(DataAccessException.class, () -> {
@@ -124,7 +124,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("JoinGame Negative: Missing token")
-    void testJoinGameFail_MissingToken() {
+    void testJoinGameFailMissingToken() {
         assertThrows(DataAccessException.class, () -> {
             gameService.joinGame(null, "WHITE", 1001);
         });
@@ -132,7 +132,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("JoinGame Negative: Invalid color")
-    void testJoinGameFail_InvalidColor() throws DataAccessException {
+    void testJoinGameFailInvalidColor() throws DataAccessException {
         // user & game
         AuthData auth = userService.register("david", "ajdfsfakljfhasd", null);
         int gameID = gameService.createGame(auth.authToken(), "BadColorGame");
@@ -145,7 +145,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("JoinGame Negative: Already taken color")
-    void testJoinGameFail_ColorTaken() throws DataAccessException {
+    void testJoinGameFailColorTaken() throws DataAccessException {
         // user1 & user2
         AuthData auth1 = userService.register("steven1", "password1", null);
         AuthData auth2 = userService.register("steven2", "password2", null);
@@ -163,7 +163,7 @@ public class GameServiceTest {
 
     @Test
     @DisplayName("JoinGame Negative: Nonexistent game")
-    void testJoinGameFail_NonexistentGame() throws DataAccessException {
+    void testJoinGameFailNonexistentGame() throws DataAccessException {
         AuthData auth = userService.register("steven3", "password3", null);
         // No game was created
 
