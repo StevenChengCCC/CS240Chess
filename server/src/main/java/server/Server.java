@@ -9,14 +9,11 @@ public class Server {
     private final GameDAO gameDAO;
 
     public Server() {
-        // Initialize/ create database + tables
         try {
             DatabaseInitializer.initialize();
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to initialize database: " + e.getMessage());
         }
-
-        // Create MySQL-based DAO objects
         this.userDAO = new MySQLUserDAO();
         this.authDAO = new MySQLAuthDAO();
         this.gameDAO = new MySQLGameDAO();
