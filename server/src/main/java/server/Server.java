@@ -9,6 +9,7 @@ public class Server {
     private final GameDAO gameDAO;
 
     public Server() {
+
         try {
             DatabaseInitializer.initialize();
         } catch (DataAccessException e) {
@@ -17,6 +18,7 @@ public class Server {
         this.userDAO = new MySQLUserDAO();
         this.authDAO = new MySQLAuthDAO();
         this.gameDAO = new MySQLGameDAO();
+
     }
 
     public int run(int desiredPort) {
