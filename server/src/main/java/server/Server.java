@@ -9,10 +9,17 @@ public class Server {
     private final GameDAO gameDAO;
 
     public Server() {
-        // Create memory-based DAO objects
-        this.userDAO = new MemoryUserDAO();
-        this.authDAO = new MemoryAuthDAO();
-        this.gameDAO = new MemoryGameDAO();
+        // Initialize/ create database + tables
+        try {
+            DatabaseInitializer.initialize();
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to initialize database: " + e.getMessage());
+        }
+
+        // Create MySQL-based DAO objects
+        this.userDAO = new MySQLUserDAO();
+        this.authDAO = new MySQLAuthDAO();
+        this.gameDAO = new MySQLGameDAO();
     }
 
     public int run(int desiredPort) {
