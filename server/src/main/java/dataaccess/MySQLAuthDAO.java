@@ -41,6 +41,16 @@ public class MySQLAuthDAO implements AuthDAO{
 
     @Override
     public void deleteAuth(String token) throws DataAccessException {
-
+        String sql = "DELETE FROM auths WHERE auth_token = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, token);
+            int rowsAffected = statement.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new DataAccessException("Auth token not found");
+            }
+        } catch (Exception e) {
+            throw new DataAccessException("Error deleting auth: " + e.getMessage());
+        }
     }
 }
