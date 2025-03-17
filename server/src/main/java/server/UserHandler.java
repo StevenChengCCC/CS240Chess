@@ -1,5 +1,6 @@
 package server;
 
+import org.mindrot.jbcrypt.BCrypt;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -117,7 +118,8 @@ public class UserHandler implements Route {
         String username = body.username;
         String password = body.password;
         UserData user = userDAO.getUser(username);
-        if (user == null || !user.password().equals(password)) {
+        String storedPassword = user.password();
+        if (user == null || !BCrypt.checkpw(password, storedPassword)){
             response.status(401);
             String errorMsg = "Error: unauthorized";
             ErrorMessage error = new ErrorMessage(errorMsg);

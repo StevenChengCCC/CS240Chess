@@ -6,6 +6,7 @@ import dataaccess.DataAccessException;
 import model.AuthData;
 import model.UserData;
 import java.util.UUID;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class UserService {
     // Our data access objects
@@ -61,7 +62,7 @@ public class UserService {
             throw new DataAccessException("unauthorized: invalid username/password");
         }
         String storedPassword = foundUser.password();
-        if (!storedPassword.equals(password)) {
+        if (!BCrypt.checkpw(password, storedPassword)) {
             throw new DataAccessException("unauthorized: invalid username/password");
         }
 

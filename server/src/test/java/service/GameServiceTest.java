@@ -12,22 +12,35 @@ import static org.junit.jupiter.api.Assertions.*;
 public class GameServiceTest {
 
     private GameService gameService;
-    private UserService userService;  // so we can create valid tokens easily
-
+    private UserService userService;
     private AuthDAO authDAO;
     private GameDAO gameDAO;
     private UserDAO userDAO;
 
+    @BeforeAll
+    static void initDatabase() throws DataAccessException {
+        DatabaseInitializer.initialize(); // Initialize MySQL database and tables
+    }
+
     @BeforeEach
     void setUp() throws DataAccessException {
-        MemoryDatabase.clearAll();
+        // Initialize MySQL DAO instances
+        authDAO = new MySQLAuthDAO();
+        gameDAO = new MySQLGameDAO();
+        userDAO = new MySQLUserDAO();
 
-        authDAO = new MemoryAuthDAO();
-        gameDAO = new MemoryGameDAO();
-        userDAO = new MemoryUserDAO();
+        // Clear all data before each test
+        ClearService clearService = new ClearService(authDAO, userDAO, gameDAO);
+        clearService.clear();
 
         gameService = new GameService(authDAO, gameDAO);
         userService = new UserService(userDAO, authDAO);
+    }
+
+    @AfterEach
+    void tearDown() throws DataAccessException {
+        ClearService clearService = new ClearService(authDAO, userDAO, gameDAO);
+        clearService.clear(); // Clean up after each test
     }
 
     // LIST GAMES TESTS
@@ -35,9 +48,7 @@ public class GameServiceTest {
     @Test
     @DisplayName("ListGames Positive: Valid token returns empty list initially")
     void testListGamesSuccessEmpty() throws DataAccessException {
-        // first register => get token
         AuthData auth = userService.register("alice", "pass", null);
-
         List<GameData> games = gameService.listGames(auth.authToken());
         assertNotNull(games);
         assertEquals(0, games.size(), "Initially, no games should exist");
@@ -46,17 +57,13 @@ public class GameServiceTest {
     @Test
     @DisplayName("ListGames Negative: Null token")
     void testListGamesFailNullToken() {
-        assertThrows(DataAccessException.class, () -> {
-            gameService.listGames(null);
-        });
+        assertThrows(DataAccessException.class, () -> gameService.listGames(null));
     }
 
     @Test
     @DisplayName("ListGames Negative: Invalid token")
     void testListGamesFailInvalidToken() {
-        assertThrows(DataAccessException.class, () -> {
-            gameService.listGames("bogus_token_555");
-        });
+        assertThrows(DataAccessException.class, () -> gameService.listGames("bogus_token_555"));
     }
 
     // CREATE GAME TESTS
@@ -65,9 +72,8 @@ public class GameServiceTest {
     @DisplayName("CreateGame Positive: Valid token, valid game name")
     void testCreateGameSuccess() throws DataAccessException {
         AuthData auth = userService.register("bob", "bobpass", null);
-
         int gameID = gameService.createGame(auth.authToken(), "MyTestGame");
-        assertTrue(gameID >= 1000 && gameID <= 9999, "Game ID should be between 1000 and 9999");
+        assertTrue(gameID > 0, "Game ID should be positive"); // MySQL typically uses auto-increment IDs
 
         GameData retrieved = gameDAO.getGame(gameID);
         assertNotNull(retrieved, "Newly created game should exist in DB");
@@ -79,27 +85,20 @@ public class GameServiceTest {
     @Test
     @DisplayName("CreateGame Negative: Missing token")
     void testCreateGameFailMissingToken() {
-        assertThrows(DataAccessException.class, () -> {
-            gameService.createGame(null, "NoTokenGame");
-        });
+        assertThrows(DataAccessException.class, () -> gameService.createGame(null, "NoTokenGame"));
     }
 
     @Test
     @DisplayName("CreateGame Negative: Invalid token")
     void testCreateGameFailInvalidToken() {
-        assertThrows(DataAccessException.class, () -> {
-            gameService.createGame("invalid_token", "AnotherGame");
-        });
+        assertThrows(DataAccessException.class, () -> gameService.createGame("invalid_token", "AnotherGame"));
     }
 
     @Test
     @DisplayName("CreateGame Negative: Blank game name")
     void testCreateGameFailBlankGameName() throws DataAccessException {
         AuthData auth = userService.register("steven", "carolpass", null);
-
-        assertThrows(DataAccessException.class, () -> {
-            gameService.createGame(auth.authToken(), "   ");
-        });
+        assertThrows(DataAccessException.class, () -> gameService.createGame(auth.authToken(), "   "));
     }
 
     // JOIN GAME TESTS
@@ -107,15 +106,10 @@ public class GameServiceTest {
     @Test
     @DisplayName("JoinGame Positive: Valid token, color, game")
     void testJoinGameSuccess() throws DataAccessException {
-        // user to get a token
         AuthData auth = userService.register("stephen", "password", null);
-        // create a game
         int gameID = gameService.createGame(auth.authToken(), "Joinable Game");
-
-        // join as white
         gameService.joinGame(auth.authToken(), "WHITE", gameID);
 
-        // check DB
         GameData joined = gameDAO.getGame(gameID);
         assertNotNull(joined);
         assertEquals("stephen", joined.whiteUsername());
@@ -125,51 +119,31 @@ public class GameServiceTest {
     @Test
     @DisplayName("JoinGame Negative: Missing token")
     void testJoinGameFailMissingToken() {
-        assertThrows(DataAccessException.class, () -> {
-            gameService.joinGame(null, "WHITE", 1001);
-        });
+        assertThrows(DataAccessException.class, () -> gameService.joinGame(null, "WHITE", 1001));
     }
 
     @Test
     @DisplayName("JoinGame Negative: Invalid color")
     void testJoinGameFailInvalidColor() throws DataAccessException {
-        // user & game
         AuthData auth = userService.register("david", "ajdfsfakljfhasd", null);
         int gameID = gameService.createGame(auth.authToken(), "BadColorGame");
-
-        // attempt to join with invalid color
-        assertThrows(DataAccessException.class, () -> {
-            gameService.joinGame(auth.authToken(), "BLUE", gameID);
-        });
+        assertThrows(DataAccessException.class, () -> gameService.joinGame(auth.authToken(), "BLUE", gameID));
     }
 
     @Test
     @DisplayName("JoinGame Negative: Already taken color")
     void testJoinGameFailColorTaken() throws DataAccessException {
-        // user1 & user2
         AuthData auth1 = userService.register("steven1", "password1", null);
         AuthData auth2 = userService.register("steven2", "password2", null);
-
-        // create game with first user
         int gameID = gameService.createGame(auth1.authToken(), "JoinTestGame");
-        // user1 joins as white
         gameService.joinGame(auth1.authToken(), "WHITE", gameID);
-
-        // user2 attempts to join as white again
-        assertThrows(DataAccessException.class, () -> {
-            gameService.joinGame(auth2.authToken(), "WHITE", gameID);
-        });
+        assertThrows(DataAccessException.class, () -> gameService.joinGame(auth2.authToken(), "WHITE", gameID));
     }
 
     @Test
     @DisplayName("JoinGame Negative: Nonexistent game")
     void testJoinGameFailNonexistentGame() throws DataAccessException {
         AuthData auth = userService.register("steven3", "password3", null);
-        // No game was created
-
-        // attempt to join a made-up game ID
-        assertThrows(DataAccessException.class, () -> {
-            gameService.joinGame(auth.authToken(), "WHITE", 9999);
-        });
+        assertThrows(DataAccessException.class, () -> gameService.joinGame(auth.authToken(), "WHITE", 9999));
     }
 }

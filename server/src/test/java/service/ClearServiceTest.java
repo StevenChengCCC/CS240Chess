@@ -15,16 +15,25 @@ public class ClearServiceTest {
     private AuthDAO authDAO;
     private GameDAO gameDAO;
 
+    @BeforeAll
+    static void initDatabase() throws DataAccessException {
+        DatabaseInitializer.initialize(); // Initialize MySQL database and tables
+    }
+
     @BeforeEach
     void setUp() throws DataAccessException {
-        MemoryDatabase.clearAll(); // empty it first just to be safe
-
-        // create in-memory DAO instances
-        userDAO = new MemoryUserDAO();
-        authDAO = new MemoryAuthDAO();
-        gameDAO = new MemoryGameDAO();
+        // Initialize MySQL DAO instances
+        userDAO = new MySQLUserDAO();
+        authDAO = new MySQLAuthDAO();
+        gameDAO = new MySQLGameDAO();
 
         clearService = new ClearService(authDAO, userDAO, gameDAO);
+        clearService.clear(); // Clear all data before each test
+    }
+
+    @AfterEach
+    void tearDown() throws DataAccessException {
+        clearService.clear(); // Clear all data after each test
     }
 
     @Test
@@ -35,7 +44,7 @@ public class ClearServiceTest {
         authDAO.createAuth(new AuthData("absdfasdkfakshjdlf", "steven"));
         gameDAO.createGame(new GameData(8888, null, null, "test game", null));
 
-        // Confirm data is in memory
+        // Confirm data is in the database
         assertNotNull(userDAO.getUser("steven"));
         assertNotNull(authDAO.getAuth("absdfasdkfakshjdlf"));
         assertNotNull(gameDAO.getGame(8888));
@@ -46,6 +55,6 @@ public class ClearServiceTest {
         // Confirm data is removed
         assertNull(userDAO.getUser("steven"), "User should be cleared");
         assertNull(authDAO.getAuth("absdfasdkfakshjdlf"), "Auth token should be cleared");
-        assertNull(gameDAO.getGame(1234), "Game should be cleared");
+        assertNull(gameDAO.getGame(8888), "Game should be cleared"); // Fixed game ID to match inserted data
     }
 }

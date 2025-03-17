@@ -13,17 +13,28 @@ public class UserServiceTest {
     private UserDAO userDAO;
     private AuthDAO authDAO;
 
+    @BeforeAll
+    static void initDatabase() throws DataAccessException {
+        DatabaseInitializer.initialize(); // Initialize MySQL database and tables
+    }
+
     @BeforeEach
     void setUp() throws DataAccessException {
+        // Initialize MySQL DAO instances
+        userDAO = new MySQLUserDAO();
+        authDAO = new MySQLAuthDAO();
+
         // Clear all data before each test
-        MemoryDatabase.clearAll();
+        ClearService clearService = new ClearService(authDAO, userDAO, new MySQLGameDAO());
+        clearService.clear();
 
-        // Initialize the in-memory DAO implementations
-        userDAO = new MemoryUserDAO();
-        authDAO = new MemoryAuthDAO();
-
-        // Create the UserService using these DAO instances
         userService = new UserService(userDAO, authDAO);
+    }
+
+    @AfterEach
+    void tearDown() throws DataAccessException {
+        ClearService clearService = new ClearService(authDAO, userDAO, new MySQLGameDAO());
+        clearService.clear(); // Clean up after each test
     }
 
     // REGISTER TESTS
@@ -32,7 +43,6 @@ public class UserServiceTest {
     @DisplayName("Register Positive: Valid username/password")
     void testRegisterSuccess() throws DataAccessException {
         AuthData auth = userService.register("Steven", "mypassword", "alice@abc.com");
-
         assertNotNull(auth, "AuthData should not be null");
         assertEquals("Steven", auth.username(), "Username should match");
         assertNotNull(auth.authToken(), "Auth token should not be null");
@@ -41,32 +51,20 @@ public class UserServiceTest {
     @Test
     @DisplayName("Register Negative: Username already taken")
     void testRegisterFailUserExists() throws DataAccessException {
-        // First registration is successful
         userService.register("bob", "bobspassword", "bob@xyz.com");
-
-        // Second registration with same username => should fail
-        assertThrows(DataAccessException.class, () -> {
-            userService.register("bob", "someOtherPass", "bob2@xyz.com");
-        });
+        assertThrows(DataAccessException.class, () -> userService.register("bob", "someOtherPass", "bob2@xyz.com"));
     }
-
 
     @Test
     @DisplayName("Register Negative: Missing username")
     void testRegisterFailMissingUsername() {
-        // Expect an exception because the username is null
-        assertThrows(DataAccessException.class, () -> {
-            userService.register(null, "someramdompassword", "neil@xyz.com");
-        });
+        assertThrows(DataAccessException.class, () -> userService.register(null, "someramdompassword", "neil@xyz.com"));
     }
 
     @Test
     @DisplayName("Register Negative: Missing password")
     void testRegisterFailMissingPassword() {
-        // Expect an exception because the password is null 王华
-        assertThrows(DataAccessException.class, () -> {
-            userService.register("charliewang", null, "charlie@xyz.com");
-        });
+        assertThrows(DataAccessException.class, () -> userService.register("charliewang", null, "charlie@xyz.com"));
     }
 
     // LOGIN TESTS
@@ -74,10 +72,7 @@ public class UserServiceTest {
     @Test
     @DisplayName("Login Positive: Valid credentials")
     void testLoginSuccess() throws DataAccessException {
-        // first register
         userService.register("david", "davidspass", null);
-
-        // now login
         AuthData auth = userService.login("david", "davidspass");
         assertNotNull(auth, "AuthData should not be null");
         assertEquals("david", auth.username());
@@ -87,22 +82,14 @@ public class UserServiceTest {
     @Test
     @DisplayName("Login Negative: Wrong password")
     void testLoginFailWrongPassword() throws DataAccessException {
-        // register
         userService.register("maniubi", "niubi", null);
-
-        // attempt login with wrong password
-        assertThrows(DataAccessException.class, () -> {
-            userService.login("maniubi", "incorrect");
-        });
+        assertThrows(DataAccessException.class, () -> userService.login("maniubi", "incorrect"));
     }
 
     @Test
     @DisplayName("Login Negative: Username does not exist")
     void testLoginFailNoSuchUser() {
-        // user not registered
-        assertThrows(DataAccessException.class, () -> {
-            userService.login("nonexistent", "nopass");
-        });
+        assertThrows(DataAccessException.class, () -> userService.login("nonexistent", "nopass"));
     }
 
     // LOGOUT TESTS
@@ -110,13 +97,8 @@ public class UserServiceTest {
     @Test
     @DisplayName("Logout Positive: Token is valid")
     void testLogoutSuccess() throws DataAccessException {
-        // Register => get token
         AuthData auth = userService.register("bestfriend", "friendspass", null);
-
-        // Logout with that token
         userService.logout(auth.authToken());
-
-        // Confirm that token no longer exists
         AuthData shouldBeNull = authDAO.getAuth(auth.authToken());
         assertNull(shouldBeNull, "Auth token should be removed");
     }
@@ -124,14 +106,12 @@ public class UserServiceTest {
     @Test
     @DisplayName("Logout Negative: Missing token")
     void testLogoutFailMissingToken() {
-        // token is null => throws exception
         assertThrows(DataAccessException.class, () -> userService.logout(null));
     }
 
     @Test
     @DisplayName("Logout Negative: Invalid token")
     void testLogoutFailInvalidToken() {
-        // try logging out with a made-up token
         assertThrows(DataAccessException.class, () -> userService.logout("jhdlsfkjghkfjasdfk"));
     }
 }
