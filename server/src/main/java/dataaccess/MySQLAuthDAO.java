@@ -6,8 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public class MySQLAuthDAO implements AuthDAO{
-
+public class MySQLAuthDAO implements AuthDAO {
     @Override
     public void createAuth(AuthData auth) throws DataAccessException {
         String sql = "INSERT INTO auths (auth_token, username) VALUES (?, ?)";
@@ -51,6 +50,17 @@ public class MySQLAuthDAO implements AuthDAO{
             }
         } catch (Exception e) {
             throw new DataAccessException("Error deleting auth: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        String sql = "DELETE FROM auths";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.executeUpdate();
+        } catch (Exception e) {
+            throw new DataAccessException("Error clearing auths: " + e.getMessage());
         }
     }
 }

@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public class MySQLUserDAO implements UserDAO{
+public class MySQLUserDAO implements UserDAO {
     @Override
     public void createUser(UserData user) throws DataAccessException {
         String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
@@ -41,11 +41,23 @@ public class MySQLUserDAO implements UserDAO{
             throw new DataAccessException("Error getting user: " + e.getMessage());
         }
     }
+
     public boolean verifyPassword(String username, String clearTextPassword) throws DataAccessException {
         UserData user = getUser(username);
         if (user == null) {
             return false;
         }
         return BCrypt.checkpw(clearTextPassword, user.password());
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        String sql = "DELETE FROM users";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.executeUpdate();
+        } catch (Exception e) {
+            throw new DataAccessException("Error clearing users: " + e.getMessage());
+        }
     }
 }

@@ -10,9 +10,9 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-
-public class MySQLGameDAO implements GameDAO{
+public class MySQLGameDAO implements GameDAO {
     private final Gson gson = new Gson();
+
     @Override
     public void createGame(GameData game) throws DataAccessException {
         String sql = "INSERT INTO games (game_id, white_username, black_username, game_name, game_state) VALUES (?, ?, ?, ?, ?)";
@@ -81,7 +81,7 @@ public class MySQLGameDAO implements GameDAO{
             statement.setString(1, game.whiteUsername());
             statement.setString(2, game.blackUsername());
             statement.setString(3, game.gameName());
-            statement.setString(4, gson.toJson(game.game())); // Re-serialize updated ChessGame
+            statement.setString(4, gson.toJson(game.game()));
             statement.setInt(5, game.gameID());
             int rowsAffected = statement.executeUpdate();
             if (rowsAffected == 0) {
@@ -89,6 +89,17 @@ public class MySQLGameDAO implements GameDAO{
             }
         } catch (Exception e) {
             throw new DataAccessException("Error updating game: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void clear() throws DataAccessException {
+        String sql = "DELETE FROM games";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.executeUpdate();
+        } catch (Exception e) {
+            throw new DataAccessException("Error clearing games: " + e.getMessage());
         }
     }
 }

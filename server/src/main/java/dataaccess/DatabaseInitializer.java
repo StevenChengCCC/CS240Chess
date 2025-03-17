@@ -9,7 +9,7 @@ public class DatabaseInitializer {
                     "password VARCHAR(255) NOT NULL, " +
                     "email VARCHAR(255)" +
                     ")",
-            "CREATE TABLE IF NOT EXISTS auth (" +
+            "CREATE TABLE IF NOT EXISTS auths (" +
                     "auth_token VARCHAR(255) PRIMARY KEY, " +
                     "username VARCHAR(255) NOT NULL, " +
                     "FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE" +

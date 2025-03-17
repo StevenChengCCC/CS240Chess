@@ -4,10 +4,8 @@ import dataaccess.AuthDAO;
 import dataaccess.UserDAO;
 import dataaccess.GameDAO;
 import dataaccess.DataAccessException;
-import dataaccess.MemoryDatabase;
 
 // service for clearing all data in the server database.
-
 public class ClearService {
     private final AuthDAO authDAO;
     private final UserDAO userDAO;
@@ -19,8 +17,10 @@ public class ClearService {
         this.gameDAO = gameDAO;
     }
 
-    //Clears all data: users, auth tokens, games.
+    // Clears all data: users, auth tokens, games.
     public void clear() throws DataAccessException {
-        MemoryDatabase.clearAll();
+        gameDAO.clear();
+        authDAO.clear();
+        userDAO.clear();
     }
 }
