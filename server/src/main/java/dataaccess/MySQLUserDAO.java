@@ -36,9 +36,16 @@ public class MySQLUserDAO implements UserDAO{
                 String email = rs.getString("email");
                 return new UserData(dbUsername, hashedPassword, email);
             }
-            return null; // User not found
+            return null;
         } catch (Exception e) {
             throw new DataAccessException("Error getting user: " + e.getMessage());
         }
+    }
+    public boolean verifyPassword(String username, String clearTextPassword) throws DataAccessException {
+        UserData user = getUser(username);
+        if (user == null) {
+            return false;
+        }
+        return BCrypt.checkpw(clearTextPassword, user.password());
     }
 }
