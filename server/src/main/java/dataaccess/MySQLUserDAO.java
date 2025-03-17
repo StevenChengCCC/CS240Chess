@@ -42,13 +42,6 @@ public class MySQLUserDAO implements UserDAO {
         }
     }
 
-    public boolean verifyPassword(String username, String clearTextPassword) throws DataAccessException {
-        UserData user = getUser(username);
-        if (user == null) {
-            return false;
-        }
-        return BCrypt.checkpw(clearTextPassword, user.password());
-    }
 
     @Override
     public void clear() throws DataAccessException {

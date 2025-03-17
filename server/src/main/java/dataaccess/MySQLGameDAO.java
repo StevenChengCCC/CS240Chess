@@ -87,6 +87,7 @@ public class MySQLGameDAO implements GameDAO {
             if (rowsAffected == 0) {
                 throw new DataAccessException("Game not found");
             }
+
         } catch (Exception e) {
             throw new DataAccessException("Error updating game: " + e.getMessage());
         }

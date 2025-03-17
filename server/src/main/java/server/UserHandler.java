@@ -71,7 +71,7 @@ public class UserHandler implements Route {
             String jsonError = gson.toJson(error);
             return jsonError;
         } catch (Exception e) {
-            response.status(403);
+            response.status(401);
             String errorMsg = "Error: " + e.getMessage();
             ErrorMessage error = new ErrorMessage(errorMsg);
             String jsonError = gson.toJson(error);
