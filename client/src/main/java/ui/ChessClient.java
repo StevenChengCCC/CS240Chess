@@ -69,7 +69,7 @@ public class ChessClient {
                 postLoginHelp();
                 break;
             case "logout":
-                //logout();
+                logout();
                 break;
             case "create":
                 //createGame();
@@ -134,6 +134,16 @@ public class ChessClient {
             System.out.println("Registered and logged in as " + authData.username());
         } catch (ClientException e) {
             System.out.println("Register failed: " + e.getMessage());
+        }
+    }
+
+    private void logout() {
+        try {
+            serverFacade.logout(authData.authToken());
+            System.out.println("Logged out successfully.");
+            authData = null;
+        } catch (ClientException e) {
+            System.out.println("Logout failed: " + e.getMessage());
         }
     }
 

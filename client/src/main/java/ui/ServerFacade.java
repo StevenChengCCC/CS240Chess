@@ -11,40 +11,45 @@ import java.net.URL;
 public class ServerFacade {
     private static final String BASE_URL = "http://localhost:8080";
     private final Gson gson = new Gson();
-
+    //pregame
     public AuthData register(String username, String password, String email) throws ClientException {
         String path = "/user";
         RegisterRequest request = new RegisterRequest(username, password, email);
         String jsonInput = gson.toJson(request);
-        String responseBody = sendPostRequest(path, jsonInput, null); // No auth token for register
+        String responseBody = sendRequest("POST", path, jsonInput, null); // No auth token for register
         AuthResponse response = gson.fromJson(responseBody, AuthResponse.class);
         return new AuthData(response.authToken, response.username);
     }
+
     public AuthData login(String username, String password) throws ClientException {
         String path = "/session";
         LoginRequest request = new LoginRequest(username, password);
         String jsonInput = gson.toJson(request);
-        String responseBody = sendPostRequest(path, jsonInput, null); // No auth token for login
+        String responseBody = sendRequest("POST", path, jsonInput, null); // No auth token for login
         AuthResponse response = gson.fromJson(responseBody, AuthResponse.class);
         return new AuthData(response.authToken, response.username);
     }
-
-    private String sendPostRequest(String path, String jsonInput, String authToken) throws ClientException {
+    //pastgame
+    public void logout(String authToken) throws ClientException {
+        String path = "/session";
+        sendRequest("DELETE", path, null, authToken);
+    }
+    private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
         try {
             URL url = new URL(BASE_URL + path);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
+            conn.setRequestMethod(method);
             conn.setRequestProperty("Content-Type", "application/json");
             if (authToken != null) {
                 conn.setRequestProperty("Authorization", authToken);
             }
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonInput.getBytes());
-                os.flush();
+            if (jsonInput != null) {
+                conn.setDoOutput(true);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(jsonInput.getBytes());
+                    os.flush();
+                }
             }
-
             int responseCode = conn.getResponseCode();
             if (responseCode == 200) {
                 return readStream(conn.getInputStream());
