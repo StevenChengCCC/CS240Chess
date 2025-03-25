@@ -2,11 +2,14 @@ package ui;
 
 import com.google.gson.Gson;
 import model.AuthData;
+import model.GameData;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 
 public class ServerFacade {
     private static final String BASE_URL = "http://localhost:8080";
@@ -42,6 +45,12 @@ public class ServerFacade {
         String responseBody = sendRequest("POST", path, jsonInput, authToken);
         CreateGameResult result = gson.fromJson(responseBody, CreateGameResult.class);
         return result.gameID;
+    }
+    public List<GameData> listGames(String authToken) throws ClientException {
+        String path = "/game";
+        String responseBody = sendRequest("GET", path, null, authToken);
+        GameListResult result = gson.fromJson(responseBody, GameListResult.class);
+        return result.games;
     }
 
     private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
@@ -89,5 +98,6 @@ public class ServerFacade {
     record AuthResponse(String username, String authToken) {}
     record CreateGameRequest(String gameName) {}
     record CreateGameResult(int gameID) {}
+    record GameListResult(List<GameData> games) {}
     record ErrorResponse(String message) {}
 }
