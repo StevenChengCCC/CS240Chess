@@ -69,7 +69,7 @@ public class ServerFacade {
         throw new ClientException("Game not found");
     }
 
-    private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
+    public String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
         try {
             URL url = new URL(BASE_URL + path);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

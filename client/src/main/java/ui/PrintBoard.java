@@ -4,14 +4,12 @@ import chess.ChessBoard;
 import chess.ChessGame;
 import chess.ChessPiece;
 import chess.ChessPosition;
-import ui.EscapeSequences;
 
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
 public class PrintBoard {
-    private static final int BOARD_SIZE = 8; // Chessboard is 8x8
-    private static final int SQUARE_SIZE = 3; // Characters per square
+    private static final int BOARD_SIZE = 8;
     private static final String[] COL_LABELS = {"a", "b", "c", "d", "e", "f", "g", "h"};
     private static final PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 
@@ -38,6 +36,7 @@ public class PrintBoard {
         // Draw rows from 8 to 1 (top to bottom)
         for (int row = BOARD_SIZE; row >= 1; row--) {
             // Row label on the left
+            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
             out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
             out.print(row + " ");
             out.print(EscapeSequences.RESET_TEXT_COLOR);
@@ -47,10 +46,14 @@ public class PrintBoard {
                 drawSquare(board, row, col, (row + col) % 2 == 0);
             }
 
-            // Row label on the right
+            // Reset background color and draw right label
+            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
             out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
             out.print(" " + row);
             out.print(EscapeSequences.RESET_TEXT_COLOR);
+
+            // Clear the rest of the line to prevent black space on the right
+            out.print(EscapeSequences.ERASE_LINE);
             out.println();
         }
 
@@ -65,6 +68,7 @@ public class PrintBoard {
         // Draw rows from 1 to 8 (top to bottom)
         for (int row = 1; row <= BOARD_SIZE; row++) {
             // Row label on the left
+            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
             out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
             out.print(row + " ");
             out.print(EscapeSequences.RESET_TEXT_COLOR);
@@ -74,10 +78,14 @@ public class PrintBoard {
                 drawSquare(board, row, col, (row + col) % 2 == 0);
             }
 
-            // Row label on the right
+            // Reset background color and draw right label
+            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
             out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
             out.print(" " + row);
             out.print(EscapeSequences.RESET_TEXT_COLOR);
+
+            // Clear the rest of the line to prevent black space on the right
+            out.print(EscapeSequences.ERASE_LINE);
             out.println();
         }
 
@@ -86,6 +94,7 @@ public class PrintBoard {
     }
 
     private static void printColumnLabels(boolean reverse) {
+        out.print(EscapeSequences.SET_BG_COLOR_BLACK);
         out.print("  "); // Align with row labels
         for (int i = 0; i < BOARD_SIZE; i++) {
             int idx = reverse ? (BOARD_SIZE - 1 - i) : i;
@@ -93,6 +102,8 @@ public class PrintBoard {
             out.print(" " + COL_LABELS[idx] + " ");
             out.print(EscapeSequences.RESET_TEXT_COLOR);
         }
+        // Clear the rest of the line after column labels
+        out.print(EscapeSequences.ERASE_LINE);
         out.println();
     }
 

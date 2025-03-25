@@ -10,6 +10,11 @@ import java.sql.ResultSet;
 public class MySQLUserDAO implements UserDAO {
     @Override
     public void createUser(UserData user) throws DataAccessException {
+        // Check if the username already exists
+        if (getUser(user.username()) != null) {
+            throw new DataAccessException("already taken");
+        }
+
         String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement statement = conn.prepareStatement(sql)) {
@@ -41,7 +46,6 @@ public class MySQLUserDAO implements UserDAO {
             throw new DataAccessException("Error getting user: " + e.getMessage());
         }
     }
-
 
     @Override
     public void clear() throws DataAccessException {

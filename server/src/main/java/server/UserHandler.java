@@ -65,6 +65,13 @@ public class UserHandler implements Route {
                 String jsonError = gson.toJson(error);
                 return jsonError;
             }
+            if (msg.equals("already taken")) { // Add this condition
+                response.status(403);
+                String errorMsg = "Error: already taken";
+                ErrorMessage error = new ErrorMessage(errorMsg);
+                String jsonError = gson.toJson(error);
+                return jsonError;
+            }
             response.status(403);
             String errorMsg = "Error: " + msg;
             ErrorMessage error = new ErrorMessage(errorMsg);
