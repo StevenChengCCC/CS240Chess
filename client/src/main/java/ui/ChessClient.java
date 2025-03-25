@@ -72,7 +72,7 @@ public class ChessClient {
                 logout();
                 break;
             case "create":
-                //createGame();
+                createGame();
                 break;
             case "list":
                 //listGames();
@@ -134,6 +134,20 @@ public class ChessClient {
             System.out.println("Registered and logged in as " + authData.username());
         } catch (ClientException e) {
             System.out.println("Register failed: " + e.getMessage());
+        }
+    }
+    private void createGame() {
+        System.out.print("Enter game name: ");
+        String gameName = scanner.nextLine().trim();
+        if (gameName.isEmpty()) {
+            System.out.println("Game name cannot be empty.");
+            return;
+        }
+        try {
+            int gameID = serverFacade.createGame(authData.authToken(), gameName);
+            System.out.println("Created game with ID: " + gameID);
+        } catch (ClientException e) {
+            System.out.println("Create game failed: " + e.getMessage());
         }
     }
 

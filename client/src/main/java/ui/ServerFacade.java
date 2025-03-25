@@ -34,6 +34,16 @@ public class ServerFacade {
         String path = "/session";
         sendRequest("DELETE", path, null, authToken);
     }
+
+    public int createGame(String authToken, String gameName) throws ClientException {
+        String path = "/game";
+        CreateGameRequest request = new CreateGameRequest(gameName);
+        String jsonInput = gson.toJson(request);
+        String responseBody = sendRequest("POST", path, jsonInput, authToken);
+        CreateGameResult result = gson.fromJson(responseBody, CreateGameResult.class);
+        return result.gameID;
+    }
+
     private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
         try {
             URL url = new URL(BASE_URL + path);
@@ -73,8 +83,11 @@ public class ServerFacade {
         }
     }
 
+
     record RegisterRequest(String username, String password, String email) {}
     record LoginRequest(String username, String password) {}
     record AuthResponse(String username, String authToken) {}
+    record CreateGameRequest(String gameName) {}
+    record CreateGameResult(int gameID) {}
     record ErrorResponse(String message) {}
 }
