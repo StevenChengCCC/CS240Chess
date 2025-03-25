@@ -22,7 +22,7 @@ public class ChessClient {
             if (authData == null) {
                 runPreLogin();
             } else {
-                //runPastlogin();
+                runPostlogin();
             }
         }
     }
@@ -45,15 +45,49 @@ public class ChessClient {
                 System.exit(0);
                 break;
             case "login":
-                handleLogin();
+                login();
                 break;
             case "register":
-                handleRegister();
+                register();
                 break;
             default:
                 System.out.println("Unknown command. Type 'help' for available commands.");
         }
     }
+
+    private void runPostlogin() {
+        System.out.print(">>> ");
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) {
+            return;
+        }
+        String command = parts[0].toLowerCase();
+
+        switch (command) {
+            case "help":
+                postLoginHelp();
+                break;
+            case "logout":
+                //logout();
+                break;
+            case "create":
+                //createGame();
+                break;
+            case "list":
+                //listGames();
+                break;
+            case "play":
+                //playGame();
+                break;
+            case "observe":
+                //observeGame();
+                break;
+            default:
+                System.out.println("Unknown command. Type 'help' for available commands.");
+        }
+    }
+
 
     private void showPreLoginHelp() {
         System.out.println("Available commands:");
@@ -63,7 +97,17 @@ public class ChessClient {
         System.out.println("  register - Register a new user");
     }
 
-    private void handleLogin() {
+    private void postLoginHelp() {
+        System.out.println("Available commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  logout - Log out and return to pre-login");
+        System.out.println("  create - Create a new game");
+        System.out.println("  list - List all existing games");
+        System.out.println("  play - Join a game as a player");
+        System.out.println("  observe - Observe a game");
+    }
+
+    private void login() {
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
         System.out.print("Password: ");
@@ -77,7 +121,7 @@ public class ChessClient {
         }
     }
 
-    private void handleRegister() {
+    private void register() {
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
         System.out.print("Password: ");
