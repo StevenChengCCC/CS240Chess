@@ -22,7 +22,7 @@ public class ChessClient {
             if (authData == null) {
                 runPreLogin();
             } else {
-                runPastlogin();
+                //runPastlogin();
             }
         }
     }
@@ -86,6 +86,7 @@ public class ChessClient {
         String email = scanner.nextLine().trim();
 
         try {
+            authData = serverFacade.register(username, password, email);
             System.out.println("Registered and logged in as " + authData.username());
         } catch (ClientException e) {
             System.out.println("Register failed: " + e.getMessage());
