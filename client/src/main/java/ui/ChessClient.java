@@ -70,6 +70,7 @@ public class ChessClient {
         String password = scanner.nextLine().trim();
 
         try {
+            authData = serverFacade.login(username, password);
             System.out.println("Logged in as " + authData.username());
         } catch (ClientException e) {
             System.out.println("Login failed: " + e.getMessage());
