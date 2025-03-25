@@ -118,7 +118,9 @@ public class PrintBoard {
     }
 
     private static String getPieceSymbol(ChessPiece piece) {
-        if (piece == null) return EscapeSequences.EMPTY;
+        if (piece == null){
+            return EscapeSequences.EMPTY;
+        }
 
         boolean isWhite = piece.getTeamColor() == ChessGame.TeamColor.WHITE;
         return switch (piece.getPieceType()) {
