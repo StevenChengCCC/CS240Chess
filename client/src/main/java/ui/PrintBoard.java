@@ -5,18 +5,14 @@ import chess.ChessGame;
 import chess.ChessPiece;
 import chess.ChessPosition;
 
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-
 public class PrintBoard {
     private static final int BOARD_SIZE = 8;
     private static final String[] COL_LABELS = {"a", "b", "c", "d", "e", "f", "g", "h"};
-    private static final PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 
     public static void drawChessBoard(ChessBoard board, boolean asBlack) {
-        out.print(EscapeSequences.ERASE_SCREEN);
-        out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-        out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
+        System.out.print(EscapeSequences.ERASE_SCREEN);
+        System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE);
 
         if (asBlack) {
             drawBlackPerspective(board);
@@ -24,9 +20,9 @@ public class PrintBoard {
             drawWhitePerspective(board);
         }
 
-        out.print(EscapeSequences.RESET_BG_COLOR);
-        out.print(EscapeSequences.RESET_TEXT_COLOR);
-        out.println();
+        System.out.print(EscapeSequences.RESET_BG_COLOR);
+        System.out.print(EscapeSequences.RESET_TEXT_COLOR);
+        System.out.println();
     }
 
     private static void drawWhitePerspective(ChessBoard board) {
@@ -36,10 +32,10 @@ public class PrintBoard {
         // Draw rows from 8 to 1 (top to bottom)
         for (int row = BOARD_SIZE; row >= 1; row--) {
             // Row label on the left
-            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-            out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
-            out.print(row + " ");
-            out.print(EscapeSequences.RESET_TEXT_COLOR);
+            System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
+            System.out.print(row + " ");
+            System.out.print(EscapeSequences.RESET_TEXT_COLOR);
 
             // Draw squares for this row
             for (int col = 1; col <= BOARD_SIZE; col++) {
@@ -47,14 +43,14 @@ public class PrintBoard {
             }
 
             // Reset background color and draw right label
-            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-            out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
-            out.print(" " + row);
-            out.print(EscapeSequences.RESET_TEXT_COLOR);
+            System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
+            System.out.print(" " + row);
+            System.out.print(EscapeSequences.RESET_TEXT_COLOR);
 
             // Clear the rest of the line to prevent black space on the right
-            out.print(EscapeSequences.ERASE_LINE);
-            out.println();
+            System.out.print(EscapeSequences.ERASE_LINE);
+            System.out.println();
         }
 
         // Column labels at the bottom
@@ -68,10 +64,10 @@ public class PrintBoard {
         // Draw rows from 1 to 8 (top to bottom)
         for (int row = 1; row <= BOARD_SIZE; row++) {
             // Row label on the left
-            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-            out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
-            out.print(row + " ");
-            out.print(EscapeSequences.RESET_TEXT_COLOR);
+            System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
+            System.out.print(row + " ");
+            System.out.print(EscapeSequences.RESET_TEXT_COLOR);
 
             // Draw squares for this row
             for (int col = BOARD_SIZE; col >= 1; col--) {
@@ -79,14 +75,14 @@ public class PrintBoard {
             }
 
             // Reset background color and draw right label
-            out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-            out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
-            out.print(" " + row);
-            out.print(EscapeSequences.RESET_TEXT_COLOR);
+            System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
+            System.out.print(" " + row);
+            System.out.print(EscapeSequences.RESET_TEXT_COLOR);
 
             // Clear the rest of the line to prevent black space on the right
-            out.print(EscapeSequences.ERASE_LINE);
-            out.println();
+            System.out.print(EscapeSequences.ERASE_LINE);
+            System.out.println();
         }
 
         // Column labels at the bottom
@@ -94,31 +90,31 @@ public class PrintBoard {
     }
 
     private static void printColumnLabels(boolean reverse) {
-        out.print(EscapeSequences.SET_BG_COLOR_BLACK);
-        out.print("  "); // Align with row labels
+        System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
+        System.out.print("  "); // Align with row labels
         for (int i = 0; i < BOARD_SIZE; i++) {
             int idx = reverse ? (BOARD_SIZE - 1 - i) : i;
-            out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
-            out.print(" " + COL_LABELS[idx] + " ");
-            out.print(EscapeSequences.RESET_TEXT_COLOR);
+            System.out.print(EscapeSequences.SET_TEXT_COLOR_GREEN);
+            System.out.print(" " + COL_LABELS[idx] + " ");
+            System.out.print(EscapeSequences.RESET_TEXT_COLOR);
         }
         // Clear the rest of the line after column labels
-        out.print(EscapeSequences.ERASE_LINE);
-        out.println();
+        System.out.print(EscapeSequences.ERASE_LINE);
+        System.out.println();
     }
 
     private static void drawSquare(ChessBoard board, int row, int col, boolean isLightSquare) {
         String squareColor = isLightSquare ? EscapeSequences.SET_BG_COLOR_LIGHT_GREY : EscapeSequences.SET_BG_COLOR_DARK_GREY;
-        out.print(squareColor);
+        System.out.print(squareColor);
 
         ChessPiece piece = board.getPiece(new ChessPosition(row, col));
         String pieceSymbol = getPieceSymbol(piece);
         String pieceColor = (piece != null && piece.getTeamColor() == ChessGame.TeamColor.WHITE) ?
                 EscapeSequences.SET_TEXT_COLOR_WHITE : EscapeSequences.SET_TEXT_COLOR_BLACK;
 
-        out.print(pieceColor);
-        out.print(pieceSymbol);
-        out.print(squareColor);
+        System.out.print(pieceColor);
+        System.out.print(pieceSymbol);
+        System.out.print(squareColor);
     }
 
     private static String getPieceSymbol(ChessPiece piece) {
