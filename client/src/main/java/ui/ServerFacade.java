@@ -52,11 +52,21 @@ public class ServerFacade {
         GameListResult result = gson.fromJson(responseBody, GameListResult.class);
         return result.games;
     }
-    public void joinGame(String authToken, String playerColor, int gameID) throws ClientException {
+    public GameData joinGame(String authToken, String playerColor, int gameID) throws ClientException {
         String path = "/game";
         JoinGameRequest request = new JoinGameRequest(playerColor, gameID);
         String jsonInput = gson.toJson(request);
         sendRequest("PUT", path, jsonInput, authToken);
+        return getGame(authToken, gameID);
+    }
+    public GameData getGame(String authToken, int gameID) throws ClientException {
+        List<GameData> games = listGames(authToken);
+        for (GameData game : games) {
+            if (game.gameID() == gameID) {
+                return game;
+            }
+        }
+        throw new ClientException("Game not found");
     }
 
     private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {

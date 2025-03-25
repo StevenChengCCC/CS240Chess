@@ -1,8 +1,8 @@
 package ui;
 
+import chess.ChessGame;
 import model.AuthData;
 import model.GameData;
-
 import java.util.List;
 import java.util.Scanner;
 
@@ -25,7 +25,7 @@ public class ChessClient {
             if (authData == null) {
                 runPreLogin();
             } else {
-                runPostlogin();
+                runPastlogin();
             }
         }
     }
@@ -58,7 +58,7 @@ public class ChessClient {
         }
     }
 
-    private void runPostlogin() {
+    private void runPastlogin() {
         System.out.print(">>> ");
         String input = scanner.nextLine().trim();
         String[] parts = input.split("\\s+");
@@ -69,7 +69,7 @@ public class ChessClient {
 
         switch (command) {
             case "help":
-                postLoginHelp();
+                pastLoginHelp();
                 break;
             case "logout":
                 logout();
@@ -81,10 +81,10 @@ public class ChessClient {
                 listGames();
                 break;
             case "play":
-                //playGame();
+                playGame();
                 break;
             case "observe":
-                //observeGame();
+                observeGame();
                 break;
             default:
                 System.out.println("Unknown command. Type 'help' for available commands.");
@@ -100,7 +100,7 @@ public class ChessClient {
         System.out.println("  register - Register a new user");
     }
 
-    private void postLoginHelp() {
+    private void pastLoginHelp() {
         System.out.println("Available commands:");
         System.out.println("  help - Show this help message");
         System.out.println("  logout - Log out and return to pre-login");
@@ -139,6 +139,17 @@ public class ChessClient {
             System.out.println("Register failed: " + e.getMessage());
         }
     }
+
+    private void logout() {
+        try {
+            serverFacade.logout(authData.authToken());
+            System.out.println("Logged out successfully.");
+            authData = null;
+        } catch (ClientException e) {
+            System.out.println("Logout failed: " + e.getMessage());
+        }
+    }
+
     private void createGame() {
         System.out.print("Enter game name: ");
         String gameName = scanner.nextLine().trim();
@@ -154,15 +165,6 @@ public class ChessClient {
         }
     }
 
-    private void logout() {
-        try {
-            serverFacade.logout(authData.authToken());
-            System.out.println("Logged out successfully.");
-            authData = null;
-        } catch (ClientException e) {
-            System.out.println("Logout failed: " + e.getMessage());
-        }
-    }
     private void listGames() {
         try {
             currentGameList = serverFacade.listGames(authData.authToken());
@@ -181,6 +183,40 @@ public class ChessClient {
             System.out.println("List games failed: " + e.getMessage());
         }
     }
+
+    private void playGame() {
+        System.out.print("Enter game ID: ");
+        String idStr = scanner.nextLine().trim();
+        int gameID;
+        try {
+            gameID = Integer.parseInt(idStr);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a valid game ID.");
+            return;
+        }
+
+        try {
+            GameData game = serverFacade.getGame(authData.authToken(), gameID);
+            System.out.print("Enter color (white/black): ");
+            String color = scanner.nextLine().trim().toLowerCase();
+            if (!color.equals("white") && !color.equals("black")) {
+                System.out.println("Invalid color. Must be 'white' or 'black'.");
+                return;
+            }
+
+            GameData updatedGame = serverFacade.joinGame(authData.authToken(), color, gameID);
+            System.out.println("Joined game " + updatedGame.gameName() + " as " + color);
+            boolean asBlack = color.equals("black");
+            PrintBoard.drawChessBoard(updatedGame.game().getBoard(), asBlack);
+        } catch (ClientException e) {
+            System.out.println("Join game failed: " + e.getMessage());
+        }
+    }
+
+    public void observeGame() {
+    }
+
+
     public static void main(String[] args) {
         ChessClient client = new ChessClient();
         client.run();
