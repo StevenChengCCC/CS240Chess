@@ -7,7 +7,7 @@ import java.util.Scanner;
 public class ChessClient {
     private final ServerFacade serverFacade;
     private final Scanner scanner;
-    private AuthData authData; // Tracks logged-in state
+    private AuthData authData;
 
     public ChessClient() {
         this.serverFacade = new ServerFacade();
@@ -21,6 +21,8 @@ public class ChessClient {
         while (true) {
             if (authData == null) {
                 runPreLogin();
+            } else {
+                runPastlogin();
             }
         }
     }
@@ -63,11 +65,30 @@ public class ChessClient {
 
     private void handleLogin() {
         System.out.print("Username: ");
+        String username = scanner.nextLine().trim();
+        System.out.print("Password: ");
+        String password = scanner.nextLine().trim();
 
+        try {
+            System.out.println("Logged in as " + authData.username());
+        } catch (ClientException e) {
+            System.out.println("Login failed: " + e.getMessage());
+        }
     }
 
     private void handleRegister() {
         System.out.print("Username: ");
+        String username = scanner.nextLine().trim();
+        System.out.print("Password: ");
+        String password = scanner.nextLine().trim();
+        System.out.print("Email: ");
+        String email = scanner.nextLine().trim();
+
+        try {
+            System.out.println("Registered and logged in as " + authData.username());
+        } catch (ClientException e) {
+            System.out.println("Register failed: " + e.getMessage());
+        }
     }
 
     public static void main(String[] args) {
