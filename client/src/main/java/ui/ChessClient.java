@@ -1,13 +1,16 @@
 package ui;
 
 import model.AuthData;
+import model.GameData;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class ChessClient {
     private final ServerFacade serverFacade;
     private final Scanner scanner;
     private AuthData authData;
+    private List<GameData> currentGameList;
 
     public ChessClient() {
         this.serverFacade = new ServerFacade();
@@ -75,7 +78,7 @@ public class ChessClient {
                 createGame();
                 break;
             case "list":
-                //listGames();
+                listGames();
                 break;
             case "play":
                 //playGame();
@@ -160,7 +163,24 @@ public class ChessClient {
             System.out.println("Logout failed: " + e.getMessage());
         }
     }
-
+    private void listGames() {
+        try {
+            currentGameList = serverFacade.listGames(authData.authToken());
+            if (currentGameList.isEmpty()) {
+                System.out.println("No games available.");
+            } else {
+                System.out.println("List of games:");
+                for (int i = 0; i < currentGameList.size(); i++) {
+                    GameData game = currentGameList.get(i);
+                    String white = game.whiteUsername() != null ? game.whiteUsername() : "None";
+                    String black = game.blackUsername() != null ? game.blackUsername() : "None";
+                    System.out.printf("%d. %s - White: %s, Black: %s%n", i + 1, game.gameName(), white, black);
+                }
+            }
+        } catch (ClientException e) {
+            System.out.println("List games failed: " + e.getMessage());
+        }
+    }
     public static void main(String[] args) {
         ChessClient client = new ChessClient();
         client.run();

@@ -52,6 +52,12 @@ public class ServerFacade {
         GameListResult result = gson.fromJson(responseBody, GameListResult.class);
         return result.games;
     }
+    public void joinGame(String authToken, String playerColor, int gameID) throws ClientException {
+        String path = "/game";
+        JoinGameRequest request = new JoinGameRequest(playerColor, gameID);
+        String jsonInput = gson.toJson(request);
+        sendRequest("PUT", path, jsonInput, authToken);
+    }
 
     private String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
         try {
@@ -96,8 +102,9 @@ public class ServerFacade {
     record RegisterRequest(String username, String password, String email) {}
     record LoginRequest(String username, String password) {}
     record AuthResponse(String username, String authToken) {}
+    record ErrorResponse(String message) {}
     record CreateGameRequest(String gameName) {}
     record CreateGameResult(int gameID) {}
     record GameListResult(List<GameData> games) {}
-    record ErrorResponse(String message) {}
+    record JoinGameRequest(String playerColor, int gameID) {}
 }
