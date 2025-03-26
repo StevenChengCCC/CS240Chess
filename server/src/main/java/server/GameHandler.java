@@ -11,7 +11,6 @@ import service.GameService;
 import model.GameData;
 import java.util.List;
 
-
 public class GameHandler implements Route {
     private final Gson gson = new Gson();
     private final GameService gameService;
@@ -28,81 +27,61 @@ public class GameHandler implements Route {
 
         try {
             if (path.equals("/game") && method.equals("GET")) {
-                // List games! GET /game
-                String token = request.headers("authorization"); // Spec says header "authorization"
+                String token = request.headers("authorization");
                 List<GameData> games = gameService.listGames(token);
-                response.status(200); // Spec says 200 for success
+                response.status(200);
                 GameListResult result = new GameListResult(games);
-                String jsonResult = gson.toJson(result);
-                return jsonResult;
+                return gson.toJson(result);
             }
 
             if (path.equals("/game") && method.equals("POST")) {
-                // Create a game! POST /game
-                String token = request.headers("authorization"); // Spec says header "authorization"
+                String token = request.headers("authorization");
                 CreateGameBody body = gson.fromJson(request.body(), CreateGameBody.class);
                 String gameName = body.gameName;
                 int gameID = gameService.createGame(token, gameName);
-                response.status(200); // Spec says 200 for success
+                response.status(200);
                 CreateGameResult result = new CreateGameResult(gameID);
-                String jsonResult = gson.toJson(result);
-                return jsonResult;
+                return gson.toJson(result);
             }
 
             if (path.equals("/game") && method.equals("PUT")) {
-                // Join a game! PUT /game
-                String token = request.headers("authorization"); // Spec says header "authorization"
+                String token = request.headers("authorization");
                 JoinGameBody body = gson.fromJson(request.body(), JoinGameBody.class);
                 String playerColor = body.playerColor;
                 Integer gameID = body.gameID;
                 gameService.joinGame(token, playerColor, gameID);
-                response.status(200); // Spec says 200 for success
-                String emptyJson = "{}";
-                return emptyJson;
+                response.status(200);
+                return "{}";
             }
 
-            // Wrong path or method
-            response.status(200);
-            String errorMsg = "Error: not found"; // Not in spec but keeping for safety
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            response.status(404);
+            ErrorMessage error = new ErrorMessage("Error: endpoint not found");
+            return gson.toJson(error);
 
         } catch (DataAccessException e) {
-            // Handle errors per spec
             String msg = e.getMessage();
             if (msg.equals("bad request")) {
                 response.status(400);
-                String errorMsg = "Error: bad request"; // Spec exact message
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
+                ErrorMessage error = new ErrorMessage("Error: missing or invalid request data");
+                return gson.toJson(error);
             }
             if (msg.equals("unauthorized")) {
                 response.status(401);
-                String errorMsg = "Error: unauthorized"; // Spec exact message
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
+                ErrorMessage error = new ErrorMessage("Error: invalid or missing authentication token");
+                return gson.toJson(error);
             }
             if (msg.equals("already taken")) {
                 response.status(403);
-                String errorMsg = "Error: already taken"; // Spec exact message
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
+                ErrorMessage error = new ErrorMessage("Error: player color already taken");
+                return gson.toJson(error);
             }
             response.status(500);
-            String errorMsg = "Error: " + msg; // Spec says description of error
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            ErrorMessage error = new ErrorMessage("Error: database operation failed - " + msg);
+            return gson.toJson(error);
         } catch (Exception e) {
             response.status(500);
-            String errorMsg = "Error: " + e.getMessage(); // Spec says description of error
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            ErrorMessage error = new ErrorMessage("Error: unexpected server error - " + e.getMessage());
+            return gson.toJson(error);
         }
     }
 

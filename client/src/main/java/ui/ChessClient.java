@@ -109,7 +109,6 @@ public class ChessClient {
         System.out.println("  play - Join a game as a player");
         System.out.println("  observe - Observe a game");
     }
-
     private void login() {
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
@@ -120,7 +119,16 @@ public class ChessClient {
             authData = serverFacade.login(username, password);
             System.out.println("Logged in as " + authData.username());
         } catch (ClientException e) {
-            System.out.println("Login failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: incorrect password")) {
+                System.out.println("Login failed: wrong password");
+            } else if (errorMessage.contains("Error: user does not exist")) {
+                System.out.println("Login failed: user not exist, you need to register");
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
+                System.out.println("Login failed: please provide both username and password");
+            } else {
+                System.out.println("Login failed: " + errorMessage);
+            }
         }
     }
 
@@ -136,7 +144,14 @@ public class ChessClient {
             authData = serverFacade.register(username, password, email);
             System.out.println("Registered and logged in as " + authData.username());
         } catch (ClientException e) {
-            System.out.println("Register failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: username already taken")) {
+                System.out.println("Register failed: username already taken");
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
+                System.out.println("Register failed: please provide username, password, and email");
+            } else {
+                System.out.println("Register failed: " + errorMessage);
+            }
         }
     }
 
@@ -146,7 +161,12 @@ public class ChessClient {
             System.out.println("Logged out successfully.");
             authData = null;
         } catch (ClientException e) {
-            System.out.println("Logout failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
+                System.out.println("Logout failed: invalid session, please log in again");
+            } else {
+                System.out.println("Logout failed: " + errorMessage);
+            }
         }
     }
 
@@ -161,7 +181,14 @@ public class ChessClient {
             int gameID = serverFacade.createGame(authData.authToken(), gameName);
             System.out.println("Created game with ID: " + gameID);
         } catch (ClientException e) {
-            System.out.println("Create game failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
+                System.out.println("Create game failed: please log in again");
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
+                System.out.println("Create game failed: please provide a valid game name");
+            } else {
+                System.out.println("Create game failed: " + errorMessage);
+            }
         }
     }
 
@@ -176,40 +203,66 @@ public class ChessClient {
                     GameData game = currentGameList.get(i);
                     String white = game.whiteUsername() != null ? game.whiteUsername() : "None";
                     String black = game.blackUsername() != null ? game.blackUsername() : "None";
-                    System.out.printf("%d. %s - White: %s, Black: %s%n", i + 1, game.gameName(), white, black);
+                    System.out.printf("%d. Game ID: %d, Name: %s - White: %s, Black: %s%n",
+                            i + 1, game.gameID(), game.gameName(), white, black);
                 }
             }
         } catch (ClientException e) {
-            System.out.println("List games failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
+                System.out.println("List games failed: please log in again");
+            } else {
+                System.out.println("List games failed: " + errorMessage);
+            }
         }
     }
 
     private void playGame() {
-        System.out.print("Enter game ID: ");
-        String idStr = scanner.nextLine().trim();
-        int gameID;
+        if (currentGameList == null || currentGameList.isEmpty()) {
+            System.out.println("No games available. Please run 'list' to see available games.");
+            return;
+        }
+
+        System.out.println("Enter the game number from the list (e.g., '1' for the first game):");
+        System.out.print("Game number: ");
+        String numberStr = scanner.nextLine().trim();
+        int number;
         try {
-            gameID = Integer.parseInt(idStr);
+            number = Integer.parseInt(numberStr);
         } catch (NumberFormatException e) {
-            System.out.println("Invalid input. Please enter a valid game ID.");
+            System.out.println("Invalid input. Please enter a number.");
+            return;
+        }
+
+        if (number < 1 || number > currentGameList.size()) {
+            System.out.printf("Invalid game number. Please enter a number between 1 and %d.%n", currentGameList.size());
+            return;
+        }
+
+        GameData game = currentGameList.get(number - 1);
+        System.out.print("Enter color (white/black): ");
+        String color = scanner.nextLine().trim().toLowerCase();
+        if (!color.equals("white") && !color.equals("black")) {
+            System.out.println("Invalid color. Must be 'white' or 'black'.");
             return;
         }
 
         try {
-            GameData game = serverFacade.getGame(authData.authToken(), gameID);
-            System.out.print("Enter color (white/black): ");
-            String color = scanner.nextLine().trim().toLowerCase();
-            if (!color.equals("white") && !color.equals("black")) {
-                System.out.println("Invalid color. Must be 'white' or 'black'.");
-                return;
-            }
-
-            GameData updatedGame = serverFacade.joinGame(authData.authToken(), color, gameID);
+            GameData updatedGame = serverFacade.joinGame(authData.authToken(), color, game.gameID());
             System.out.println("Joined game " + updatedGame.gameName() + " as " + color);
             boolean asBlack = color.equals("black");
             PrintBoard.drawChessBoard(updatedGame.game().getBoard(), asBlack);
         } catch (ClientException e) {
-            System.out.println("Join game failed: " + e.getMessage());
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
+                System.out.println("Join game failed: please log in again");
+            } else if (errorMessage.contains("Error: player color already taken")) {
+                System.out.println("Join game failed: the selected color is already taken");
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
+                System.out.println("Join game failed: please provide a valid game ID and color");
+            } else {
+                System.out.println("Join game failed: " + errorMessage);
+            }
         }
     }
 

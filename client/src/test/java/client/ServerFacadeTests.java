@@ -21,7 +21,7 @@ public class ServerFacadeTests {
         server = new Server();
         var port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
-        facade = new ServerFacade();
+        facade = new ServerFacade(port);
     }
 
     @AfterAll
@@ -31,18 +31,17 @@ public class ServerFacadeTests {
 
     @BeforeEach
     void clearDatabase() throws ClientException {
-        // Send a DELETE request to /db to clear the database
         facade.sendRequest("DELETE", "/db", null, null);
     }
 
-    // Register Tests
+    // --- Register Tests ---
 
     @Test
     void registerSuccess() throws ClientException {
         AuthData authData = facade.register("player1", "password", "p1@email.com");
         assertNotNull(authData);
         assertEquals("player1", authData.username());
-        assertTrue(authData.authToken().length() > 10, "Auth token should be a non-trivial string");
+        assertTrue(authData.authToken().length() > 10);
     }
 
     @Test
@@ -50,10 +49,10 @@ public class ServerFacadeTests {
         assertDoesNotThrow(() -> facade.register("player1", "password", "p1@email.com"));
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.register("player1", "differentPassword", "p2@email.com"));
-        assertTrue(exception.getMessage().contains("Error: already taken"));
+        assertTrue(exception.getMessage().contains("Error: username already taken"));
     }
 
-    // Login Tests
+    // --- Login Tests ---
 
     @Test
     void loginSuccess() throws ClientException {
@@ -69,35 +68,41 @@ public class ServerFacadeTests {
         facade.register("player1", "password", "p1@email.com");
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.login("player1", "wrongPassword"));
-        assertTrue(exception.getMessage().contains("Error: unauthorized"));
+        assertTrue(exception.getMessage().contains("Error: incorrect password"));
     }
 
-    // Logout Tests
+    @Test
+    void loginFailureUserNotExist() throws ClientException {
+        ClientException exception = assertThrows(ClientException.class, () ->
+                facade.login("nonexistent", "password"));
+        assertTrue(exception.getMessage().contains("Error: user does not exist"));
+    }
+
+    // --- Logout Tests ---
 
     @Test
     void logoutSuccess() throws ClientException {
         AuthData authData = facade.register("player1", "password", "p1@email.com");
         assertDoesNotThrow(() -> facade.logout(authData.authToken()));
-        // Verify logout by attempting to use the token
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.listGames(authData.authToken()));
-        assertTrue(exception.getMessage().contains("Error: unauthorized"));
+        assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
     @Test
     void logoutFailureInvalidToken() {
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.logout("invalid-token"));
-        assertTrue(exception.getMessage().contains("Error: unauthorized"));
+        assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // CreateGame Tests
+    // --- CreateGame Tests ---
 
     @Test
     void createGameSuccess() throws ClientException {
         AuthData authData = facade.register("player1", "password", "p1@email.com");
         int gameID = facade.createGame(authData.authToken(), "TestGame");
-        assertTrue(gameID >= 1000 && gameID <= 9999, "Game ID should be between 1000 and 9999");
+        assertTrue(gameID >= 1000 && gameID <= 9999);
         List<GameData> games = facade.listGames(authData.authToken());
         assertEquals(1, games.size());
         assertEquals("TestGame", games.get(0).gameName());
@@ -107,10 +112,10 @@ public class ServerFacadeTests {
     void createGameFailureUnauthorized() {
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.createGame("invalid-token", "TestGame"));
-        assertTrue(exception.getMessage().contains("Error: unauthorized"));
+        assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // ListGames Tests
+    // --- ListGames Tests ---
 
     @Test
     void listGamesSuccess() throws ClientException {
@@ -127,10 +132,10 @@ public class ServerFacadeTests {
     void listGamesFailureUnauthorized() {
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.listGames("invalid-token"));
-        assertTrue(exception.getMessage().contains("Error: unauthorized"));
+        assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // JoinGame Tests
+    // --- JoinGame Tests ---
 
     @Test
     void joinGameSuccess() throws ClientException {
@@ -151,6 +156,6 @@ public class ServerFacadeTests {
         facade.joinGame(authData1.authToken(), "white", gameID);
         ClientException exception = assertThrows(ClientException.class, () ->
                 facade.joinGame(authData2.authToken(), "white", gameID));
-        assertTrue(exception.getMessage().contains("Error: already taken"));
+        assertTrue(exception.getMessage().contains("Error: player color already taken"));
     }
 }

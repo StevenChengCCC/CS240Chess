@@ -28,8 +28,6 @@ public class PrintBoard {
     private static void drawWhitePerspective(ChessBoard board) {
         // Column labels at the top (a to h)
         printColumnLabels(false);
-
-        // Draw rows from 8 to 1 (top to bottom)
         for (int row = BOARD_SIZE; row >= 1; row--) {
             // Row label on the left
             System.out.print(EscapeSequences.SET_BG_COLOR_BLACK);
@@ -104,7 +102,7 @@ public class PrintBoard {
     }
 
     private static void drawSquare(ChessBoard board, int row, int col, boolean isLightSquare) {
-        String squareColor = isLightSquare ? EscapeSequences.SET_BG_COLOR_LIGHT_GREY : EscapeSequences.SET_BG_COLOR_DARK_GREY;
+        String squareColor = isLightSquare ? EscapeSequences.SET_BG_COLOR_DARK_GREY : EscapeSequences.SET_BG_COLOR_LIGHT_GREY;
         System.out.print(squareColor);
 
         ChessPiece piece = board.getPiece(new ChessPosition(row, col));

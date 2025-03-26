@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 public class ClearHandler implements Route {
     private final Gson gson = new Gson();
     private final ClearService clearService;
+
     public ClearHandler(ClearService clearService) {
         this.clearService = clearService;
     }
@@ -22,7 +23,11 @@ public class ClearHandler implements Route {
             return "{}";
         } catch (DataAccessException e) {
             response.status(500);
-            var error = new ErrorMessage("Error: " + e.getMessage());
+            ErrorMessage error = new ErrorMessage("Error: database operation failed - " + e.getMessage());
+            return gson.toJson(error);
+        } catch (Exception e) {
+            response.status(500);
+            ErrorMessage error = new ErrorMessage("Error: unexpected server error - " + e.getMessage());
             return gson.toJson(error);
         }
     }
