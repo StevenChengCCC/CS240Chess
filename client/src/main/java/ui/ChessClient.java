@@ -239,7 +239,7 @@ public class ChessClient {
     }
 
     private void observeGame() {
-        GameData game = selectGameByNumber(); //so does this one
+        GameData game = selectGameByNumber();
         if (game == null) {
             return;
         }
