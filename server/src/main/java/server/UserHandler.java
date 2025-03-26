@@ -43,57 +43,53 @@ public class UserHandler implements Route {
                 return logoutUser(request, response);
             }
             // Wrong path or method
-            response.status(200);
-            String errorMsg = "Error: not found";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            response.status(404);
+            ErrorMessage error = new ErrorMessage("Error: endpoint not found");
+            return gson.toJson(error);
 
         } catch (DataAccessException e) {
             String msg = e.getMessage();
-            if (msg.equals("bad request")) {
-                response.status(400);
-                String errorMsg = "Error: bad request";
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
+            switch (msg) {
+                case "bad request" -> {
+                    response.status(400);
+                    ErrorMessage error = new ErrorMessage("Error: missing or invalid request data");
+                    return gson.toJson(error);
+                }
+                case "unauthorized" -> {
+                    response.status(401);
+                    ErrorMessage error = new ErrorMessage("Error: invalid or missing authentication token");
+                    return gson.toJson(error);
+                }
+                case "already taken" -> {
+                    response.status(403);
+                    ErrorMessage error = new ErrorMessage("Error: username already taken");
+                    return gson.toJson(error);
+                }
+                case "user not exist" -> {
+                    response.status(401);
+                    ErrorMessage error = new ErrorMessage("Error: user does not exist");
+                    return gson.toJson(error);
+                }
+                case "wrong password" -> {
+                    response.status(401);
+                    ErrorMessage error = new ErrorMessage("Error: incorrect password");
+                    return gson.toJson(error);
+                }
             }
-            if (msg.equals("unauthorized")) {
-                response.status(401);
-                String errorMsg = "Error: unauthorized";
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
-            }
-            if (msg.equals("already taken")) { // Add this condition
-                response.status(403);
-                String errorMsg = "Error: already taken";
-                ErrorMessage error = new ErrorMessage(errorMsg);
-                String jsonError = gson.toJson(error);
-                return jsonError;
-            }
-            response.status(403);
-            String errorMsg = "Error: " + msg;
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            response.status(500);
+            ErrorMessage error = new ErrorMessage("Error: database operation failed - " + msg);
+            return gson.toJson(error);
         } catch (Exception e) {
-            response.status(401);
-            String errorMsg = "Error: " + e.getMessage();
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            response.status(500);
+            ErrorMessage error = new ErrorMessage("Error: unexpected server error - " + e.getMessage());
+            return gson.toJson(error);
         }
     }
 
     private Object registerUser(Request request, Response response) throws DataAccessException {
         RegisterBody body = gson.fromJson(request.body(), RegisterBody.class);
         if (body == null || body.username == null || body.password == null) {
-            response.status(400);
-            String errorMsg = "Error: bad request";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            throw new DataAccessException("bad request");
         }
 
         String username = body.username;
@@ -108,30 +104,26 @@ public class UserHandler implements Route {
 
         response.status(200);
         RegisterResult result = new RegisterResult(username, token);
-        String jsonResult = gson.toJson(result);
-        return jsonResult;
+        return gson.toJson(result);
     }
 
     private Object loginUser(Request request, Response response) throws DataAccessException {
         LoginBody body = gson.fromJson(request.body(), LoginBody.class);
         if (body == null || body.username == null || body.password == null) {
-            response.status(400);
-            String errorMsg = "Error: bad request";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            throw new DataAccessException("bad request");
         }
 
         String username = body.username;
         String password = body.password;
         UserData user = userDAO.getUser(username);
+
+        if (user == null) {
+            throw new DataAccessException("user not exist");
+        }
+
         String storedPassword = user.password();
-        if (user == null || !BCrypt.checkpw(password, storedPassword)){
-            response.status(401);
-            String errorMsg = "Error: unauthorized";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+        if (!BCrypt.checkpw(password, storedPassword)) {
+            throw new DataAccessException("wrong password");
         }
 
         String token = UUID.randomUUID().toString();
@@ -140,33 +132,23 @@ public class UserHandler implements Route {
 
         response.status(200);
         LoginResult result = new LoginResult(username, token);
-        String jsonResult = gson.toJson(result);
-        return jsonResult;
+        return gson.toJson(result);
     }
 
     private Object logoutUser(Request request, Response response) throws DataAccessException {
         String token = request.headers("authorization");
         if (token == null || token.isBlank()) {
-            response.status(401);
-            String errorMsg = "Error: unauthorized";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            throw new DataAccessException("unauthorized");
         }
 
         AuthData auth = authDAO.getAuth(token);
         if (auth == null) {
-            response.status(401);
-            String errorMsg = "Error: unauthorized";
-            ErrorMessage error = new ErrorMessage(errorMsg);
-            String jsonError = gson.toJson(error);
-            return jsonError;
+            throw new DataAccessException("unauthorized");
         }
 
         authDAO.deleteAuth(token);
         response.status(200);
-        String emptyJson = "{}";
-        return emptyJson;
+        return "{}";
     }
 
     record ErrorMessage(String message) {}
