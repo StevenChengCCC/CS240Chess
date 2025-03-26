@@ -178,7 +178,7 @@ public class ChessClient {
         }
         try {
             int gameID = serverFacade.createGame(authData.authToken(), gameName);
-            System.out.println("Created game with ID: " + gameID);
+            System.out.println("Created game created");
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
             if (errorMessage.contains("Error: invalid or missing authentication token")) {
@@ -202,8 +202,8 @@ public class ChessClient {
                     GameData game = currentGameList.get(i);
                     String white = game.whiteUsername() != null ? game.whiteUsername() : "None";
                     String black = game.blackUsername() != null ? game.blackUsername() : "None";
-                    System.out.printf("%d. Game ID: %d, Name: %s - White: %s, Black: %s%n",
-                            i + 1, game.gameID(), game.gameName(), white, black);
+                    System.out.printf("%d. Name: %s - White: %s, Black: %s%n",
+                            i + 1, game.gameName(), white, black);
                 }
             }
         } catch (ClientException e) {
@@ -217,28 +217,10 @@ public class ChessClient {
     }
 
     private void playGame() {
-        if (currentGameList == null || currentGameList.isEmpty()) {
-            System.out.println("No games available. Please run 'list' to see available games.");
+        GameData game = selectGameByNumber(); // make the top part a helper function to pass the code quilaity test
+        if (game == null) {
             return;
         }
-
-        System.out.println("Enter the game number from the list (e.g., '1' for the first game):");
-        System.out.print("Game number: ");
-        String numberStr = scanner.nextLine().trim();
-        int number;
-        try {
-            number = Integer.parseInt(numberStr);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid input. Please enter a number.");
-            return;
-        }
-
-        if (number < 1 || number > currentGameList.size()) {
-            System.out.printf("Invalid game number. Please enter a number between 1 and %d.%n", currentGameList.size());
-            return;
-        }
-
-        GameData game = currentGameList.get(number - 1);
         System.out.print("Enter color (white/black): ");
         String color = scanner.nextLine().trim().toLowerCase();
         if (!color.equals("white") && !color.equals("black")) {
@@ -252,22 +234,47 @@ public class ChessClient {
             boolean asBlack = color.equals("black");
             PrintBoard.drawChessBoard(updatedGame.game().getBoard(), asBlack);
         } catch (ClientException e) {
-            String errorMessage = e.getMessage();
-            if (errorMessage.contains("Error: invalid or missing authentication token")) {
-                System.out.println("Join game failed: please log in again");
-            } else if (errorMessage.contains("Error: player color already taken")) {
-                System.out.println("Join game failed: the selected color is already taken");
-            } else if (errorMessage.contains("Error: missing or invalid request data")) {
-                System.out.println("Join game failed: please provide a valid game ID and color");
-            } else {
-                System.out.println("Join game failed: " + errorMessage);
-            }
+            System.out.println("Failed to join game: " + e.getMessage());
         }
     }
 
-    public void observeGame() {
+    private void observeGame() {
+        GameData game = selectGameByNumber(); //so does this one
+        if (game == null) {
+            return;
+        }
+        try {
+            System.out.println("Observing game: " + game.gameName());
+            PrintBoard.drawChessBoard(game.game().getBoard(), false);
+        } catch (Exception e) {
+            System.out.println("Failed to observe game: " + e.getMessage());
+        }
     }
 
+    private GameData selectGameByNumber() {
+        if (currentGameList == null || currentGameList.isEmpty()) {
+            System.out.println("No games available. Please run 'list' to see available games.");
+            return null;
+        }
+
+        System.out.println("Enter the game number from the list (e.g., '1' for the first game):");
+        System.out.print("Game number: ");
+        String numberStr = scanner.nextLine().trim();
+        int number;
+        try {
+            number = Integer.parseInt(numberStr);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a number.");
+            return null;
+        }
+
+        if (number < 1 || number > currentGameList.size()) {
+            System.out.printf("Invalid game number. Please enter a number between 1 and %d.%n", currentGameList.size());
+            return null;
+        }
+
+        return currentGameList.get(number - 1);
+    }
 
     public static void main(String[] args) {
         ChessClient client = new ChessClient(8080);
