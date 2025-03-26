@@ -12,8 +12,11 @@ import java.net.URL;
 import java.util.List;
 
 public class ServerFacade {
-    private static final String BASE_URL = "http://localhost:8080";
+    private final String BASE_URL;
     private final Gson gson = new Gson();
+    public ServerFacade(int port) {
+        this.BASE_URL = "http://localhost:" + port;
+    }
     //pregame
     public AuthData register(String username, String password, String email) throws ClientException {
         String path = "/user";

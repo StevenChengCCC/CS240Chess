@@ -34,7 +34,7 @@ public class ServerFacadeTests {
         facade.sendRequest("DELETE", "/db", null, null);
     }
 
-    // --- Register Tests ---
+    // Register Tests
 
     @Test
     void registerSuccess() throws ClientException {
@@ -52,7 +52,7 @@ public class ServerFacadeTests {
         assertTrue(exception.getMessage().contains("Error: username already taken"));
     }
 
-    // --- Login Tests ---
+    // Login Tests
 
     @Test
     void loginSuccess() throws ClientException {
@@ -78,7 +78,7 @@ public class ServerFacadeTests {
         assertTrue(exception.getMessage().contains("Error: user does not exist"));
     }
 
-    // --- Logout Tests ---
+    // Logout Tests
 
     @Test
     void logoutSuccess() throws ClientException {
@@ -96,7 +96,7 @@ public class ServerFacadeTests {
         assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // --- CreateGame Tests ---
+    // CreateGame Tests
 
     @Test
     void createGameSuccess() throws ClientException {
@@ -115,7 +115,7 @@ public class ServerFacadeTests {
         assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // --- ListGames Tests ---
+    // ListGames Tests
 
     @Test
     void listGamesSuccess() throws ClientException {
@@ -135,7 +135,7 @@ public class ServerFacadeTests {
         assertTrue(exception.getMessage().contains("Error: invalid or missing authentication token"));
     }
 
-    // --- JoinGame Tests ---
+    // JoinGame Tests
 
     @Test
     void joinGameSuccess() throws ClientException {

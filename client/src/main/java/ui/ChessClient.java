@@ -1,6 +1,5 @@
 package ui;
 
-import chess.ChessGame;
 import model.AuthData;
 import model.GameData;
 import java.util.List;
@@ -12,8 +11,8 @@ public class ChessClient {
     private AuthData authData;
     private List<GameData> currentGameList;
 
-    public ChessClient() {
-        this.serverFacade = new ServerFacade();
+    public ChessClient(int port) {
+        this.serverFacade = new ServerFacade(port);
         this.scanner = new Scanner(System.in);
         this.authData = null;
     }
@@ -271,7 +270,7 @@ public class ChessClient {
 
 
     public static void main(String[] args) {
-        ChessClient client = new ChessClient();
+        ChessClient client = new ChessClient(8080);
         client.run();
     }
 }
