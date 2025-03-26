@@ -12,10 +12,10 @@ import java.net.URL;
 import java.util.List;
 
 public class ServerFacade {
-    private final String BASE_URL;
+    private final String baseUrl;
     private final Gson gson = new Gson();
     public ServerFacade(int port) {
-        this.BASE_URL = "http://localhost:" + port;
+        this.baseUrl = "http://localhost:" + port;
     }
     //pregame
     public AuthData register(String username, String password, String email) throws ClientException {
@@ -74,7 +74,7 @@ public class ServerFacade {
 
     public String sendRequest(String method, String path, String jsonInput, String authToken) throws ClientException {
         try {
-            URL url = new URL(BASE_URL + path);
+            URL url = new URL(baseUrl + path);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod(method);
             conn.setRequestProperty("Content-Type", "application/json");
