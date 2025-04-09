@@ -2,6 +2,8 @@ package ui;
 
 import model.AuthData;
 import model.GameData;
+
+
 import java.util.List;
 import java.util.Scanner;
 
@@ -10,21 +12,31 @@ public class ChessClient {
     private final Scanner scanner;
     private AuthData authData;
     private List<GameData> currentGameList;
+    private enum State { PRELOGIN, PASTLOGIN, GAMEPLAY }
+    private State state;
 
     public ChessClient(int port) {
         this.serverFacade = new ServerFacade(port);
         this.scanner = new Scanner(System.in);
         this.authData = null;
+        this.currentGameList = null;
+        this.state = State.PRELOGIN;
     }
 
     public void run() {
         System.out.println("Welcome to Chess Client");
 
         while (true) {
-            if (authData == null) {
-                runPreLogin();
-            } else {
-                runPastlogin();
+            switch (state) {
+                case PRELOGIN:
+                    runPreLogin();
+                    break;
+                case PASTLOGIN:
+                    runPastLogin();
+                    break;
+                case GAMEPLAY:
+                    runGameplay();
+                    break;
             }
         }
     }
@@ -57,7 +69,7 @@ public class ChessClient {
         }
     }
 
-    private void runPastlogin() {
+    private void runPastLogin() {
         System.out.print(">>> ");
         String input = scanner.nextLine().trim();
         String[] parts = input.split("\\s+");
@@ -157,6 +169,7 @@ public class ChessClient {
         try {
             authData = serverFacade.login(username, password);
             System.out.println("Logged in as " + authData.username());
+            state = State.PASTLOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
             if (errorMessage.contains("Error: incorrect password")) {
@@ -182,6 +195,7 @@ public class ChessClient {
         try {
             authData = serverFacade.register(username, password, email);
             System.out.println("Registered and logged in as " + authData.username());
+            state = State.PASTLOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
             if (errorMessage.contains("Error: username already taken")) {
@@ -273,6 +287,7 @@ public class ChessClient {
             System.out.println("Joined game " + updatedGame.gameName() + " as " + color);
             boolean asBlack = color.equals("black");
             PrintBoard.drawChessBoard(updatedGame.game().getBoard(), asBlack);
+            state = State.GAMEPLAY;
         } catch (ClientException e) {
             System.out.println("Failed to join game: " + e.getMessage());
         }
