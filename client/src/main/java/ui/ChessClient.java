@@ -89,6 +89,36 @@ public class ChessClient {
                 System.out.println("Unknown command. Type 'help' for available commands.");
         }
     }
+    private void runGameplay() {
+        System.out.print(">>> ");
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) return;
+        String command = parts[0].toLowerCase();
+
+        switch (command) {
+            case "help":
+                showGameplayHelp();
+                break;
+            case "redraw":
+                //redrawChessBoard();
+                break;
+            case "leave":
+                //leaveGame();
+                break;
+            case "move":
+                //makeMove();
+                break;
+            case "resign":
+                //resignGame();
+                break;
+            case "highlight":
+                //highlightLegalMoves();
+                break;
+            default:
+                System.out.println("Unknown command. Type 'help' for available commands.");
+        }
+    }
 
 
     private void showPreLoginHelp() {
@@ -107,6 +137,16 @@ public class ChessClient {
         System.out.println("  list - List all existing games");
         System.out.println("  play - Join a game as a player");
         System.out.println("  observe - Observe a game");
+    }
+
+    private void showGameplayHelp() {
+        System.out.println("Gameplay Commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  redraw - Redraw the chess board");
+        System.out.println("  leave - Leave the game and return to post-login");
+        System.out.println("  move - Make a move (format: startRow startCol endRow endCol)");
+        System.out.println("  resign - Resign from the game");
+        System.out.println("  highlight - Highlight legal moves for a piece (format: row col)");
     }
     private void login() {
         System.out.print("Username: ");
