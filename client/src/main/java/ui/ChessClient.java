@@ -181,6 +181,7 @@ public class ChessClient {
             } else {
                 System.out.println("Login failed: " + errorMessage);
             }
+            state = State.PRELOGIN;
         }
     }
 
@@ -205,6 +206,7 @@ public class ChessClient {
             } else {
                 System.out.println("Register failed: " + errorMessage);
             }
+            state = State.PRELOGIN;
         }
     }
 
@@ -213,10 +215,13 @@ public class ChessClient {
             serverFacade.logout(authData.authToken());
             System.out.println("Logged out successfully.");
             authData = null;
+            state = State.PRELOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
             if (errorMessage.contains("Error: invalid or missing authentication token")) {
                 System.out.println("Logout failed: invalid session, please log in again");
+                authData = null;
+                state = State.PRELOGIN;
             } else {
                 System.out.println("Logout failed: " + errorMessage);
             }
@@ -330,6 +335,10 @@ public class ChessClient {
 
         return currentGameList.get(number - 1);
     }
+
+    // game play state
+
+    
 
     public static void main(String[] args) {
         ChessClient client = new ChessClient(8080);

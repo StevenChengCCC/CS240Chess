@@ -1,44 +1,50 @@
 package websocket.messages;
 
-import java.util.Objects;
+import chess.ChessGame;
 
-/**
- * Represents a Message the server can send through a WebSocket
- * 
- * Note: You can add to this class, but you should not alter the existing
- * methods.
- */
 public class ServerMessage {
-    ServerMessageType serverMessageType;
-
     public enum ServerMessageType {
         LOAD_GAME,
         ERROR,
         NOTIFICATION
     }
 
+    private final ServerMessageType serverMessageType;
+    private ChessGame game; // For LOAD_GAME
+    private String errorMessage; // For ERROR
+    private String message; // For NOTIFICATION
+
     public ServerMessage(ServerMessageType type) {
         this.serverMessageType = type;
     }
 
+    public ServerMessage(ServerMessageType type, ChessGame game) {
+        this(type);
+        this.game = game;
+    }
+
+    public ServerMessage(ServerMessageType type, String message) {
+        this(type);
+        if (type == ServerMessageType.ERROR) {
+            this.errorMessage = message;
+        } else if (type == ServerMessageType.NOTIFICATION) {
+            this.message = message;
+        }
+    }
+
     public ServerMessageType getServerMessageType() {
-        return this.serverMessageType;
+        return serverMessageType;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof ServerMessage)) {
-            return false;
-        }
-        ServerMessage that = (ServerMessage) o;
-        return getServerMessageType() == that.getServerMessageType();
+    public ChessGame getGame() {
+        return game;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getServerMessageType());
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }
