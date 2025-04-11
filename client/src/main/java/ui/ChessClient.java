@@ -2,6 +2,7 @@ package ui;
 
 import model.AuthData;
 import model.GameData;
+import websocket.messages.ServerMessage;
 
 
 import java.util.List;
@@ -338,7 +339,20 @@ public class ChessClient {
 
     // game play state
 
-    
+    public void handleServerMessage(ServerMessage message) {
+        switch (message.getServerMessageType()) {
+            case LOAD_GAME:
+                //currentBoard = message.getGame().getBoard();
+                //redrawChessBoard();
+                break;
+            case NOTIFICATION:
+                System.out.println("Notification: " + message.getMessage());
+                break;
+            case ERROR:
+                System.out.println("Error: " + message.getErrorMessage());
+                break;
+        }
+    }
 
     public static void main(String[] args) {
         ChessClient client = new ChessClient(8080);
