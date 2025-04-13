@@ -18,38 +18,16 @@ public class ChessGame {
         this.board.resetBoard();
         this.currentTeam = TeamColor.WHITE;
     }
-
-    /**
-     * @return Which team's turn it is
-     */
     public TeamColor getTeamTurn() {
         return currentTeam;
     }
-
-    /**
-     * Set's which teams turn it is
-     *
-     * @param team the team whose turn it is
-     */
     public void setTeamTurn(TeamColor team) {
         this.currentTeam = team;
     }
-
-    /**
-     * Enum identifying the 2 possible teams in a chess game
-     */
     public enum TeamColor {
         WHITE,
         BLACK
     }
-
-    /**
-     * Gets a valid moves for a piece at the given location
-     *
-     * @param startPosition the piece to get valid moves for
-     * @return Set of valid moves for requested piece, or null if no piece at
-     * startPosition
-     */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece currPiece = board.getPiece(startPosition);
         if (currPiece == null) {
@@ -197,20 +175,9 @@ public class ChessGame {
         }
         return null;
     }
-    /**
-     * Sets this game's chessboard with a given board
-     *
-     * @param board the new board to use
-     */
     public void setBoard(ChessBoard board) {
         this.board = board;;
     }
-
-    /**
-     * Gets the current chessboard
-     *
-     * @return the chessboard
-     */
     public ChessBoard getBoard() {
         return this.board;
     }
