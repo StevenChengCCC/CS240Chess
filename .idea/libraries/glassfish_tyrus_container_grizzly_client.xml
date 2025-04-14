@@ -1,7 +1,11 @@
 <component name="libraryTable">
-  <library name="glassfish.tyrus.client" type="repository">
-    <properties maven-id="org.glassfish.tyrus:tyrus-client:1.17" />
+  <library name="glassfish.tyrus.container.grizzly.client" type="repository">
+    <properties maven-id="org.glassfish.tyrus:tyrus-container-grizzly-client:1.17" />
     <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/tyrus/tyrus-container-grizzly-client/1.17/tyrus-container-grizzly-client-1.17.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/grizzly/grizzly-framework/2.3.22/grizzly-framework-2.3.22.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/grizzly/grizzly-http-server/2.3.22/grizzly-http-server-2.3.22.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/grizzly/grizzly-http/2.3.22/grizzly-http-2.3.22.jar!/" />
       <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/tyrus/tyrus-client/1.17/tyrus-client-1.17.jar!/" />
       <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/tyrus/tyrus-core/1.17/tyrus-core-1.17.jar!/" />
       <root url="jar://$MAVEN_REPOSITORY$/org/glassfish/tyrus/tyrus-spi/1.17/tyrus-spi-1.17.jar!/" />
