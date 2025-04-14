@@ -12,6 +12,9 @@ import org.eclipse.jetty.websocket.api.annotations.*;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ServerMessage;
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
+import chess.InvalidMoveException;
 
 import java.io.IOException;
 import java.util.Map;
@@ -66,6 +69,11 @@ public class WebSocketHandler {
                 case CONNECT:
                     handleConnect(session, authToken, gameID);
                     break;
+                case MAKE_MOVE:
+                    JsonObject moveJson = json.getAsJsonObject("move");
+                    ChessMove move = parseMove(moveJson);
+                    handleMakeMove(session, authToken, gameID, move);
+                    break;
                 case LEAVE:
                     handleLeave(session, authToken, gameID);
                     break;
@@ -96,6 +104,49 @@ public class WebSocketHandler {
         sessionInfoMap.put(session, new GameSessionInfo(gameID, username));
         sendLoadGame(session, game);
         broadcastNotification(gameID, session, username + " joined the game as " + role);
+    }
+
+    private void handleMakeMove(Session session, String authToken, int gameID, ChessMove move) throws IOException {
+        AuthData auth = validateAuth(authToken);
+        if (auth == null) {
+            sendError(session, "Error: Invalid auth token");
+            return;
+        }
+        GameData game = getGame(gameID);
+        if (game == null) {
+            sendError(session, "Error: Game not found");
+            return;
+        }
+        String username = auth.username();
+        if (!isPlayerInGame(username, game)) {
+            sendError(session, "Error: Observers cannot make moves");
+            return;
+        }
+        ChessGame chessGame = game.game();
+        if (isGameOver(gameID, chessGame)) {
+            sendError(session, "Error: Game is over");
+            return;
+        }
+        ChessGame.TeamColor color = getPlayerColor(username, game);
+        if (chessGame.getTeamTurn() != color) {
+            sendError(session, "Error: Not your turn");
+            return;
+        }
+        try {
+            if (!chessGame.validMoves(move.getStartPosition()).contains(move)) {
+                sendError(session, "Error: Invalid move");
+                return;
+            }
+            chessGame.makeMove(move);
+            updateGame(gameID, new GameData(gameID,game.whiteUsername(), game.blackUsername(),game.gameName(),chessGame));
+            broadcastLoadGame(gameID, game);
+            broadcastNotification(gameID, session, username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition());
+            checkGameStatus(gameID, chessGame, color);
+        } catch (InvalidMoveException e) {
+            sendError(session, "Error: Invalid move: " + e.getMessage());
+        } catch (DataAccessException e) {
+            sendError(session, "Error: Error updating game: " + e.getMessage());
+        }
     }
 
     private void handleLeave(Session session, String authToken, int gameID) throws IOException {
@@ -216,9 +267,31 @@ public class WebSocketHandler {
         gameDAO.updateGame(game);
     }
 
+    private void checkGameStatus(int gameID, ChessGame game, ChessGame.TeamColor color) throws IOException {
+        ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE) ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+        if (game.isInCheck(opponentColor)) {
+            broadcastNotification(gameID, null, opponentColor + " is in check");
+        }
+        if (game.isInCheckmate(opponentColor)) {
+            broadcastNotification(gameID, null, opponentColor + " is in checkmate. " + color + " wins!");
+            gameOverMap.put(gameID, true);
+        } else if (game.isInStalemate(opponentColor)) {
+            broadcastNotification(gameID, null, "Stalemate! The game is a draw.");
+            gameOverMap.put(gameID, true);
+        }
+    }
+
     private void sendLoadGame(Session session, GameData gameData) throws IOException {
         LoadGameMessage msg = new LoadGameMessage(gameData.game());
         session.getRemote().sendString(gson.toJson(msg));
+    }
+
+    private void broadcastLoadGame(int gameID, GameData gameData) throws IOException {
+        LoadGameMessage msg = new LoadGameMessage(gameData.game());
+        String json = gson.toJson(msg);
+        for (Session s : getSessionsInGame(gameID)) {
+            s.getRemote().sendString(json);
+        }
     }
 
     private void sendError(Session session, String message) throws IOException {
@@ -241,6 +314,16 @@ public class WebSocketHandler {
                 .filter(entry -> entry.getValue().gameID == gameID)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
+    }
+
+    private ChessMove parseMove(JsonObject moveJson) {
+        int startRow = moveJson.get("startRow").getAsInt();
+        int startCol = moveJson.get("startCol").getAsInt();
+        int endRow = moveJson.get("endRow").getAsInt();
+        int endCol = moveJson.get("endCol").getAsInt();
+        ChessPosition start = new ChessPosition(startRow, startCol);
+        ChessPosition end = new ChessPosition(endRow, endCol);
+        return new ChessMove(start, end, null);
     }
 
     // Server message classes
