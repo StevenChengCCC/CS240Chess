@@ -3,6 +3,7 @@ package server;
 import spark.Spark;
 import dataaccess.*;
 import service.ClearService;
+import server.WebSocketHandler;
 
 public class Server {
     private final UserDAO userDAO;
@@ -31,6 +32,11 @@ public class Server {
         ClearHandler clearHandler = new ClearHandler(clearService);
         UserHandler userHandler = new UserHandler(userDAO, authDAO);
         GameHandler gameHandler = new GameHandler(authDAO, gameDAO);
+
+        // Register WebSocket handler
+        WebSocketHandler webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
+        Spark.webSocket("/ws", webSocketHandler);
+
         // /db => DELETE
         Spark.delete("/db", clearHandler);
 
