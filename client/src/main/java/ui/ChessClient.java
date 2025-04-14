@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import model.AuthData;
 import model.GameData;
-import websocket.messages.ServerMessage;
-import chess.ChessGame;
 import chess.ChessMove;
 import chess.ChessPosition;
 
@@ -184,10 +182,10 @@ public class ChessClient {
                 //makeMove();
                 break;
             case "resign":
-                //resignGame();
+                resignGame();
                 break;
             case "highlight":
-                //highlightLegalMoves();
+                highlightLegalMoves();
                 break;
             default:
                 System.out.println("Unknown command. Type 'help' for available commands.");
@@ -386,6 +384,47 @@ public class ChessClient {
             System.out.println("Left the game.");
         } catch (IOException e) {
             System.out.println("Error leaving game: " + e.getMessage());
+        }
+    }
+
+    private void resignGame() {
+        System.out.println("Are you sure you want to resign? (yes/no)");
+        String confirm = scanner.nextLine().trim().toLowerCase();
+        if (confirm.equals("yes")) {
+            try {
+                JsonObject cmd = new JsonObject();
+                cmd.addProperty("commandType", "RESIGN");
+                cmd.addProperty("authToken", authData.authToken());
+                cmd.addProperty("gameID", currentGame.gameID());
+                webSocketSession.getBasicRemote().sendText(gson.toJson(cmd));
+                state = State.PASTLOGIN;
+                System.out.println("You have resigned from the game.");
+            } catch (IOException e) {
+                System.out.println("Error resigning: " + e.getMessage());
+            }
+        }
+    }
+
+    private void highlightLegalMoves() {
+        System.out.print("Enter piece position (row col): ");
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length != 2) {
+            System.out.println("Invalid input. Use: row col");
+            return;
+        }
+        try {
+            int row = Integer.parseInt(parts[0]);
+            int col = Integer.parseInt(parts[1]);
+            ChessPosition pos = new ChessPosition(row, col);
+            Collection<ChessMove> moves = currentGame.game().validMoves(pos);
+            if (moves == null || moves.isEmpty()) {
+                System.out.println("No legal moves for this piece.");
+            } else {
+                PrintBoard.printChessBoardWithHighlights(currentGame.game().getBoard(), moves, isBlackPerspective);
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid position: row and column must be numbers.");
         }
     }
 
