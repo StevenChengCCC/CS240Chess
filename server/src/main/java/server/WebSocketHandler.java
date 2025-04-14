@@ -70,7 +70,7 @@ public class WebSocketHandler {
                     //handleMakeMove(session, authToken, gameID, move);
                     break;
                 case LEAVE:
-                    //handleLeave(session, authToken, gameID);
+                    handleLeave(session, authToken, gameID);
                     break;
                 case RESIGN:
                     //handleResign(session, authToken, gameID);
@@ -101,6 +101,32 @@ public class WebSocketHandler {
         broadcastNotification(gameID, session, username + " joined the game as " + role);
     }
 
+    private void handleLeave(Session session, String authToken, int gameID) throws IOException {
+        AuthData auth = validateAuth(authToken);
+        if (auth == null) {
+            sendError(session, "Error: Invalid auth token");
+            return;
+        }
+        GameData game = getGame(gameID);
+        if (game == null) {
+            sendError(session, "Error: Game not found");
+            return;
+        }
+        String username = auth.username();
+        GameData updatedGame = game;
+        if (username.equals(game.whiteUsername())) {
+            updatedGame = new GameData(game.gameID(), null, game.blackUsername(), game.gameName(), game.game());
+        } else if (username.equals(game.blackUsername())) {
+            updatedGame = new GameData(game.gameID(), game.whiteUsername(), null, game.gameName(), game.game());
+        }
+        try {
+            updateGame(gameID, updatedGame);
+            sessionInfoMap.remove(session);
+            broadcastNotification(gameID, session, username + " left the game");
+        } catch (DataAccessException e) {
+            sendError(session, "Error: Error updating game: " + e.getMessage());
+        }
+    }
     private void handleDisconnect(Session session) {
         GameSessionInfo info = sessionInfoMap.get(session);
         if (info != null) {
@@ -142,12 +168,8 @@ public class WebSocketHandler {
         }
     }
 
-    private boolean isGameOver(int gameID, ChessGame game) {
-        return game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
-                game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
-                game.isInStalemate(ChessGame.TeamColor.WHITE) ||
-                game.isInStalemate(ChessGame.TeamColor.BLACK) ||
-                gameOverMap.getOrDefault(gameID, false);
+    private void updateGame(int gameID, GameData game) throws DataAccessException {
+        gameDAO.updateGame(game);
     }
 
     private void sendLoadGame(Session session, GameData gameData) throws IOException {
