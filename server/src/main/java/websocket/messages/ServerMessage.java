@@ -1,50 +1,21 @@
 package websocket.messages;
 
-import chess.ChessGame;
+import model.GameData;
 
 public class ServerMessage {
-    public enum ServerMessageType {
-        LOAD_GAME,
-        ERROR,
-        NOTIFICATION
-    }
+    public enum ServerMessageType { LOAD_GAME, NOTIFICATION, ERROR }
 
     private final ServerMessageType serverMessageType;
-    private ChessGame game; // For LOAD_GAME
-    private String errorMessage; // For ERROR
-    private String message; // For NOTIFICATION
+    private final GameData game; // For LOAD_GAME
+    private final String message; // For NOTIFICATION and ERROR
 
-    public ServerMessage(ServerMessageType type) {
-        this.serverMessageType = type;
-    }
-
-    public ServerMessage(ServerMessageType type, ChessGame game) {
-        this(type);
+    public ServerMessage(ServerMessageType serverMessageType, GameData game, String message) {
+        this.serverMessageType = serverMessageType;
         this.game = game;
+        this.message = message;
     }
 
-    public ServerMessage(ServerMessageType type, String message) {
-        this(type);
-        if (type == ServerMessageType.ERROR) {
-            this.errorMessage = message;
-        } else if (type == ServerMessageType.NOTIFICATION) {
-            this.message = message;
-        }
-    }
-
-    public ServerMessageType getServerMessageType() {
-        return serverMessageType;
-    }
-
-    public ChessGame getGame() {
-        return game;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public String getMessage() {
-        return message;
-    }
+    public ServerMessageType getServerMessageType() { return serverMessageType; }
+    public GameData getGame() { return game; }
+    public String getMessage() { return message; }
 }
