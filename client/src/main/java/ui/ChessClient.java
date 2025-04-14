@@ -336,8 +336,6 @@ public class ChessClient {
         return currentGameList.get(number - 1);
     }
 
-    // game play state
-    
 
     public static void main(String[] args) {
         ChessClient client = new ChessClient(8080);

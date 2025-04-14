@@ -66,17 +66,14 @@ public class WebSocketHandler {
                 case CONNECT:
                     handleConnect(session, authToken, gameID);
                     break;
-                case MAKE_MOVE:
-                    //handleMakeMove(session, authToken, gameID, move);
-                    break;
                 case LEAVE:
                     handleLeave(session, authToken, gameID);
                     break;
                 case RESIGN:
-                    //handleResign(session, authToken, gameID);
+                    handleResign(session, authToken, gameID);
                     break;
                 default:
-                    //sendError(session, "Unknown command type");
+                    sendError(session, "Unknown command type");
             }
         } catch (Exception e) {
             sendError(session, "Error processing message: " + e.getMessage());
@@ -127,6 +124,32 @@ public class WebSocketHandler {
             sendError(session, "Error: Error updating game: " + e.getMessage());
         }
     }
+
+    private void handleResign(Session session, String authToken, int gameID) throws IOException {
+        AuthData auth = validateAuth(authToken);
+        if (auth == null) {
+            sendError(session, "Error: Invalid auth token");
+            return;
+        }
+        GameData game = getGame(gameID);
+        if (game == null) {
+            sendError(session, "Error: Game not found");
+            return;
+        }
+        String username = auth.username();
+        if (!isPlayerInGame(username, game)) {
+            sendError(session, "Error: Observers cannot resign");
+            return;
+        }
+        ChessGame chessGame = game.game();
+        if (isGameOver(gameID, chessGame)) {
+            sendError(session, "Error: Game is already over");
+            return;
+        }
+        gameOverMap.put(gameID, true);
+        broadcastNotification(gameID, null, username + " resigned from the game");
+    }
+
     private void handleDisconnect(Session session) {
         GameSessionInfo info = sessionInfoMap.get(session);
         if (info != null) {
@@ -158,6 +181,19 @@ public class WebSocketHandler {
         }
     }
 
+    private boolean isPlayerInGame(String username, GameData game) {
+        return username.equals(game.whiteUsername()) || username.equals(game.blackUsername());
+    }
+
+    private ChessGame.TeamColor getPlayerColor(String username, GameData game) {
+        if (username.equals(game.whiteUsername())) {
+            return ChessGame.TeamColor.WHITE;
+        } else if (username.equals(game.blackUsername())) {
+            return ChessGame.TeamColor.BLACK;
+        }
+        return null;
+    }
+
     private String determineRole(String username, GameData game) {
         if (username.equals(game.whiteUsername())) {
             return "white";
@@ -166,6 +202,14 @@ public class WebSocketHandler {
         } else {
             return "observer";
         }
+    }
+
+    private boolean isGameOver(int gameID, ChessGame game) {
+        return game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
+                game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
+                game.isInStalemate(ChessGame.TeamColor.WHITE) ||
+                game.isInStalemate(ChessGame.TeamColor.BLACK) ||
+                gameOverMap.getOrDefault(gameID, false);
     }
 
     private void updateGame(int gameID, GameData game) throws DataAccessException {
