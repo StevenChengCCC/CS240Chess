@@ -55,7 +55,6 @@ public class WebSocketHandler {
     @OnWebSocketMessage
     public void onMessage(Session session, String message) throws IOException {
         try {
-            // Instead of manually parsing everything, parse into UserGameCommand:
             UserGameCommand command = gson.fromJson(message, UserGameCommand.class);
 
             if (command == null) {
@@ -72,7 +71,6 @@ public class WebSocketHandler {
                     handleConnect(session, authToken, gameID);
                     break;
                 case MAKE_MOVE:
-                    // The command object itself has the move already if it was in the JSON
                     ChessMove move = command.getMove();
                     if (move == null) {
                         sendError(session, "Error: Move data not provided");
@@ -94,10 +92,7 @@ public class WebSocketHandler {
         }
     }
 
-    // This is now not strictly needed if GSON populates command.getMove(),
-    // but if you want to keep a manual parser in case you do partial manual parsing:
     private ChessMove parseMove(JsonObject moveJson) {
-        // The "start" and "end" are nested objects in your JSON
         JsonObject startObj = moveJson.getAsJsonObject("start");
         int startRow = startObj.get("row").getAsInt();
         int startCol = startObj.get("col").getAsInt();
@@ -296,19 +291,28 @@ public class WebSocketHandler {
     }
 
     private void checkGameStatus(int gameID, ChessGame game, ChessGame.TeamColor color) throws IOException {
-        ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE) ?
-                ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
-        if (game.isInCheck(opponentColor)) {
-            broadcastNotification(gameID, null, opponentColor + " is in check");
+        ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE)
+                ? ChessGame.TeamColor.BLACK
+                : ChessGame.TeamColor.WHITE;
+
+        boolean isCheckmate = game.isInCheckmate(opponentColor);
+        boolean isStalemate = game.isInStalemate(opponentColor);
+        if (isCheckmate) {
+            broadcastNotification(gameID, null,
+                    opponentColor + " is in checkmate. " + color + " wins!");
+            gameOverMap.put(gameID, true);
         }
-        if (game.isInCheckmate(opponentColor)) {
-            broadcastNotification(gameID, null, opponentColor + " is in checkmate. " + color + " wins!");
+        else if (isStalemate) {
+            broadcastNotification(gameID, null,
+                    "Stalemate! The game is a draw.");
             gameOverMap.put(gameID, true);
-        } else if (game.isInStalemate(opponentColor)) {
-            broadcastNotification(gameID, null, "Stalemate! The game is a draw.");
-            gameOverMap.put(gameID, true);
+        }
+        else if (game.isInCheck(opponentColor)) {
+            broadcastNotification(gameID, null,
+                    opponentColor + " is in check");
         }
     }
+
 
     private void sendLoadGame(Session session, GameData gameData) throws IOException {
         LoadGameMessage msg = new LoadGameMessage(gameData.game());
@@ -345,7 +349,7 @@ public class WebSocketHandler {
                 .collect(Collectors.toSet());
     }
 
-    // ----- Server message classes (unchanged but shown for reference) -----
+    // Server message classes
 
     public static class LoadGameMessage extends ServerMessage {
         public ChessGame game;
