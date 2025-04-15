@@ -1,54 +1,62 @@
 package ui;
-import com.google.gson.JsonObject;
+
+import com.google.gson.Gson;
 import model.AuthData;
 import model.GameData;
 import chess.ChessGame;
 import chess.ChessMove;
 import chess.ChessPosition;
 import chess.ChessGame.TeamColor;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+
 public class ChessClient {
     private final ServerFacade serverFacade;
     private final Scanner scanner;
+    private final WebSocketHandler webSocketHandler;
+
     private AuthData authData;
     private List<GameData> currentGameList;
     private GameData currentGame;
     private boolean isBlackPerspective;
     private String userRole;
+    private final Gson gson = new Gson();
+
     private enum State { PRELOGIN, PASTLOGIN, GAMEPLAY }
     private State state;
-    private final WebSocketClient webSocketClient;
+
     public ChessClient(int port) {
         this.serverFacade = new ServerFacade(port);
         this.scanner = new Scanner(System.in);
+        this.webSocketHandler = new WebSocketHandler(this);
         this.authData = null;
         this.currentGameList = null;
         this.currentGame = null;
         this.isBlackPerspective = false;
         this.userRole = null;
         this.state = State.PRELOGIN;
-        this.webSocketClient = new WebSocketClient(this);
     }
-    public AuthData getAuthData() {
-        return authData;
+
+    // Callback methods for WebSocketHandler
+    public void updateGame(ChessGame game) {
+        if (currentGame != null) {
+            currentGame = new GameData(
+                    currentGame.gameID(),
+                    currentGame.whiteUsername(),
+                    currentGame.blackUsername(),
+                    currentGame.gameName(),
+                    game
+            );
+            updateGameState(currentGame);
+        }
     }
-    public GameData getCurrentGame() {
-        return currentGame;
+    public void showNotification(String message) {
+        System.out.println(message);
     }
-    public void setCurrentGame(GameData currentGame) {
-        this.currentGame = currentGame;
-    }
-    public boolean isBlackPerspective() {
-        return isBlackPerspective;
-    }
-    public void setBlackPerspective(boolean blackPerspective) {
-        isBlackPerspective = blackPerspective;
-    }
-    public static void main(String[] args) {
-        ChessClient client = new ChessClient(8080);
-        client.run();
+    public void showError(String errorMessage) {
+        System.out.println(errorMessage);
     }
     public void run() {
         System.out.println("Welcome to Chess Client");
@@ -79,6 +87,41 @@ public class ChessClient {
             default -> System.out.println("Unknown command. Type 'help' for available commands.");
         }
     }
+    private void runPastLogin() {
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) {
+            return;
+        }
+        String command = parts[0].toLowerCase();
+        switch (command) {
+            case "help" -> pastLoginHelp();
+            case "logout" -> logout();
+            case "create" -> createGame();
+            case "list" -> listGames();
+            case "play" -> playGame();
+            case "observe" -> observeGame();
+            default -> System.out.println("Unknown command. Type 'help' for available commands.");
+        }
+    }
+    private void runGameplay() {
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) {
+            return;
+        }
+        String command = parts[0].toLowerCase();
+        switch (command) {
+            case "help" -> showGameplayHelp();
+            case "redraw" -> redrawChessBoard();
+            case "leave" -> leaveGame();
+            case "move" -> makeMove();
+            case "resign" -> resignGame();
+            case "highlight" -> highlightLegalMoves();
+            default -> System.out.println("Unknown command. Type 'help' for available commands.");
+        }
+    }
+
     private void showPreLoginHelp() {
         System.out.println("Available commands:");
         System.out.println("  help - Show this help message");
@@ -86,6 +129,27 @@ public class ChessClient {
         System.out.println("  login - Log in with username and password");
         System.out.println("  register - Register a new user");
     }
+
+    private void pastLoginHelp() {
+        System.out.println("Available commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  logout - Log out and return to pre-login");
+        System.out.println("  create - Create a new game");
+        System.out.println("  list - List all existing games");
+        System.out.println("  play - Join a game as a player");
+        System.out.println("  observe - Observe a game");
+    }
+
+    private void showGameplayHelp() {
+        System.out.println("Gameplay Commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  redraw - Redraw the chess board");
+        System.out.println("  leave - Leave the game and return to post-login");
+        System.out.println("  move - Make a move (format: startRow startCol endRow endCol)");
+        System.out.println("  resign - Resign from the game");
+        System.out.println("  highlight - Highlight legal moves for a piece (format: row col)");
+    }
+
     private void login() {
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
@@ -98,11 +162,11 @@ public class ChessClient {
             state = State.PASTLOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
-            if (errorMessage.contains("incorrect password")) {
+            if (errorMessage.contains("Error: incorrect password")) {
                 System.out.println("Login failed: wrong password");
-            } else if (errorMessage.contains("user does not exist")) {
+            } else if (errorMessage.contains("Error: user does not exist")) {
                 System.out.println("Login failed: user not exist, you need to register");
-            } else if (errorMessage.contains("missing or invalid request data")) {
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
                 System.out.println("Login failed: please provide both username and password");
             } else {
                 System.out.println("Login failed: " + errorMessage);
@@ -124,9 +188,9 @@ public class ChessClient {
             state = State.PASTLOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
-            if (errorMessage.contains("username already taken")) {
+            if (errorMessage.contains("Error: username already taken")) {
                 System.out.println("Register failed: username already taken");
-            } else if (errorMessage.contains("missing or invalid request data")) {
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
                 System.out.println("Register failed: please provide username, password, and email");
             } else {
                 System.out.println("Register failed: " + errorMessage);
@@ -134,37 +198,8 @@ public class ChessClient {
             state = State.PRELOGIN;
         }
     }
-    private void runPastLogin() {
-        String input = scanner.nextLine().trim();
-        String[] parts = input.split("\\s+");
-        if (parts.length == 0) {
-            return;
-        }
-        String command = parts[0].toLowerCase();
-        switch (command) {
-            case "help" -> pastLoginHelp();
-            case "logout" -> logout();
-            case "create" -> createGame();
-            case "list" -> listGames();
-            case "play" -> playGame();
-            case "observe" -> observeGame();
-            default -> System.out.println("Unknown command. Type 'help' for available commands.");
-        }
-    }
-    private void pastLoginHelp() {
-        System.out.println("Available commands:");
-        System.out.println("  help - Show this help message");
-        System.out.println("  logout - Log out and return to pre-login");
-        System.out.println("  create - Create a new game");
-        System.out.println("  list - List all existing games");
-        System.out.println("  play - Join a game as a player");
-        System.out.println("  observe - Observe a game");
-    }
+
     private void logout() {
-        if (authData == null) {
-            System.out.println("You're not logged in.");
-            return;
-        }
         try {
             serverFacade.logout(authData.authToken());
             System.out.println("Logged out successfully.");
@@ -172,20 +207,16 @@ public class ChessClient {
             state = State.PRELOGIN;
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
-            if (errorMessage.contains("invalid or missing authentication token")) {
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
                 System.out.println("Logout failed: invalid session, please log in again");
+                authData = null;
+                state = State.PRELOGIN;
             } else {
                 System.out.println("Logout failed: " + errorMessage);
             }
-            authData = null;
-            state = State.PRELOGIN;
         }
     }
     private void createGame() {
-        if (authData == null) {
-            System.out.println("You must log in first.");
-            return;
-        }
         System.out.print("Enter game name: ");
         String gameName = scanner.nextLine().trim();
         if (gameName.isEmpty()) {
@@ -194,12 +225,12 @@ public class ChessClient {
         }
         try {
             int gameID = serverFacade.createGame(authData.authToken(), gameName);
-            System.out.println("Created game with ID: " + gameID);
+            System.out.println("Created game created");
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
-            if (errorMessage.contains("invalid or missing authentication token")) {
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
                 System.out.println("Create game failed: please log in again");
-            } else if (errorMessage.contains("missing or invalid request data")) {
+            } else if (errorMessage.contains("Error: missing or invalid request data")) {
                 System.out.println("Create game failed: please provide a valid game name");
             } else {
                 System.out.println("Create game failed: " + errorMessage);
@@ -207,10 +238,6 @@ public class ChessClient {
         }
     }
     private void listGames() {
-        if (authData == null) {
-            System.out.println("You must log in first.");
-            return;
-        }
         try {
             currentGameList = serverFacade.listGames(authData.authToken());
             if (currentGameList.isEmpty()) {
@@ -219,40 +246,25 @@ public class ChessClient {
                 System.out.println("List of games:");
                 for (int i = 0; i < currentGameList.size(); i++) {
                     GameData game = currentGameList.get(i);
-                    String white = (game.whiteUsername() != null) ? game.whiteUsername() : "None";
-                    String black = (game.blackUsername() != null) ? game.blackUsername() : "None";
+                    String white = game.whiteUsername() != null ? game.whiteUsername() : "None";
+                    String black = game.blackUsername() != null ? game.blackUsername() : "None";
                     System.out.printf("%d. Name: %s - White: %s, Black: %s%n",
                             i + 1, game.gameName(), white, black);
                 }
             }
         } catch (ClientException e) {
             String errorMessage = e.getMessage();
-            if (errorMessage.contains("invalid or missing authentication token")) {
+            if (errorMessage.contains("Error: invalid or missing authentication token")) {
                 System.out.println("List games failed: please log in again");
             } else {
                 System.out.println("List games failed: " + errorMessage);
             }
         }
     }
+
     private void playGame() {
-        if (currentGameList == null || currentGameList.isEmpty()) {
-            System.out.println("No active games. Try 'list' first.");
-            return;
-        }
-        System.out.print("Choose a game number: ");
-        String line = scanner.nextLine().trim();
-        int choice;
-        try {
-            choice = Integer.parseInt(line);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid choice.");
-            return;
-        }
-        if (choice < 1 || choice > currentGameList.size()) {
-            System.out.println("Invalid game number.");
-            return;
-        }
-        GameData chosen = currentGameList.get(choice - 1);
+        GameData chosen = selectGameByNumber();
+        if (chosen == null) {return;}
         if (isGameOver(chosen)) {
             System.out.println("That game is already finished. Please pick another.");
             return;
@@ -273,37 +285,20 @@ public class ChessClient {
             if (updatedGame.game() != null) {
                 PrintBoard.drawChessBoard(updatedGame.game().getBoard(), isBlackPerspective);
             }
-            webSocketClient.connect();
+            webSocketHandler.connect(authData.authToken(), currentGame.gameID());
             state = State.GAMEPLAY;
         } catch (ClientException e) {
             System.out.println("Failed to join game: " + e.getMessage());
         }
     }
-    private void observeGame() {
-        if (currentGameList == null || currentGameList.isEmpty()) {
-            System.out.println("No active games. Try 'list' first.");
-            return;
-        }
-        System.out.print("Choose a game number: ");
-        String line = scanner.nextLine().trim();
-        int choice;
-        try {
-            choice = Integer.parseInt(line);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid choice.");
-            return;
-        }
-        if (choice < 1 || choice > currentGameList.size()) {
-            System.out.println("Invalid game number.");
-            return;
-        }
-        GameData chosen = currentGameList.get(choice - 1);
 
+    private void observeGame() {
+        GameData chosen = selectGameByNumber();
+        if (chosen == null) {return;}
         if (isGameOver(chosen)) {
             System.out.println("That game is already finished. Please pick another.");
             return;
         }
-
         try {
             currentGame = chosen;
             userRole = "observer";
@@ -313,59 +308,34 @@ public class ChessClient {
             if (chosen.game() != null) {
                 PrintBoard.drawChessBoard(chosen.game().getBoard(), isBlackPerspective);
             }
-            webSocketClient.connect();
+            webSocketHandler.connect(authData.authToken(), currentGame.gameID());
             state = State.GAMEPLAY;
         } catch (Exception e) {
-            System.out.println("Failed to observe game: " + e.getMessage());
+            System.out.println("Failed to observe: " + e.getMessage());
         }
     }
-    private void runGameplay() {
-        String input = scanner.nextLine().trim();
-        String[] parts = input.split("\\s+");
-        if (parts.length == 0) {
-            return;
+
+    private GameData selectGameByNumber() {
+        if (currentGameList == null || currentGameList.isEmpty()) {
+            System.out.println("No active games to choose from. Try 'list' first.");
+            return null;
         }
-        String command = parts[0].toLowerCase();
-        switch (command) {
-            case "help" -> showGameplayHelp();
-            case "redraw" -> redrawChessBoard();
-            case "leave" -> leaveGame();
-            case "move" -> makeMove();
-            case "resign" -> resignGame();
-            case "highlight" -> highlightLegalMoves();
-            default -> System.out.println("Unknown command. Type 'help' for available commands.");
+        System.out.print("Choose a game number: ");
+        String line = scanner.nextLine().trim();
+        int choice;
+        try {
+            choice = Integer.parseInt(line);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid choice.");
+            return null;
         }
+        if (choice < 1 || choice > currentGameList.size()) {
+            System.out.println("Invalid game number.");
+            return null;
+        }
+        return currentGameList.get(choice - 1);
     }
-    private void showGameplayHelp() {
-        System.out.println("Gameplay Commands:");
-        System.out.println("  help - Show this help message");
-        System.out.println("  redraw - Redraw the chess board");
-        System.out.println("  leave - Leave the game and return to post-login");
-        System.out.println("  move - Make a move (format: 'a2 a4')");
-        System.out.println("  resign - Resign from the game");
-        System.out.println("  highlight - Highlight legal moves for a piece (format: 'a2')");
-    }
-    private void redrawChessBoard() {
-        if (currentGame != null && currentGame.game() != null) {
-            PrintBoard.drawChessBoard(currentGame.game().getBoard(), isBlackPerspective);
-        } else {
-            System.out.println("No active game to redraw.");
-        }
-    }
-    private void leaveGame() {
-        if (currentGame == null || currentGame.game() == null) {
-            System.out.println("No active game to leave.");
-            return;
-        }
-        if (!webSocketClient.isSessionOpen()) {
-            System.out.println("Already disconnected from this game.");
-            state = State.PASTLOGIN;
-            return;
-        }
-        webSocketClient.sendLeaveCommand();
-        System.out.println("You left the game.");
-        state = State.PASTLOGIN;
-    }
+
     private void makeMove() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game or missing game data. Cannot move.");
@@ -375,11 +345,6 @@ public class ChessClient {
             System.out.println("You're only observing. You cannot make moves.");
             return;
         }
-        if (!webSocketClient.isSessionOpen()) {
-            System.out.println("Not connected to server or WebSocket is closed.");
-            return;
-        }
-
         TeamColor currentTurn = currentGame.game().getTeamTurn();
         TeamColor myColor = userRole.equals("white") ? TeamColor.WHITE : TeamColor.BLACK;
         if (currentTurn != myColor) {
@@ -391,7 +356,7 @@ public class ChessClient {
         String line = scanner.nextLine().trim();
         String[] tokens = line.split("\\s+");
         if (tokens.length != 2) {
-            System.out.println("Usage: 'move <start> <end>', e.g. 'a2 a4'");
+            System.out.println("Usage: move <start> <end>, e.g. 'a2 a4'");
             return;
         }
 
@@ -401,11 +366,13 @@ public class ChessClient {
         try {
             ChessPosition startPos = parseAlgebraic(startNotation);
             ChessPosition endPos = parseAlgebraic(endNotation);
-            webSocketClient.sendMoveCommand(startPos, endPos);
+            ChessMove move = new ChessMove(startPos, endPos, null); // Assuming no promotion for simplicity
+            webSocketHandler.sendMakeMoveCommand(move);
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid notation: " + e.getMessage());
         }
     }
+
     private void highlightLegalMoves() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game or missing game data. Cannot highlight.");
@@ -429,6 +396,7 @@ public class ChessClient {
             PrintBoard.printChessBoardWithHighlights(currentGame.game().getBoard(), moves, isBlackPerspective);
         }
     }
+
     private void resignGame() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game to resign from.");
@@ -438,22 +406,43 @@ public class ChessClient {
             System.out.println("Observers cannot resign.");
             return;
         }
-        if (!webSocketClient.isSessionOpen()) {
-            System.out.println("Not connected. Cannot resign.");
-            return;
-        }
-
         System.out.println("Are you sure you want to resign? (yes/no)");
         String confirm = scanner.nextLine().trim().toLowerCase();
         if (!confirm.equals("yes")) {
             System.out.println("Resignation canceled.");
             return;
         }
-
-        webSocketClient.sendResignCommand();
-        System.out.println("You resigned from the game.");
+        webSocketHandler.sendResignCommand();
         state = State.PASTLOGIN;
     }
+
+    private void leaveGame() {
+        if (currentGame == null || currentGame.game() == null) {
+            System.out.println("No active game to leave.");
+            return;
+        }
+        webSocketHandler.disconnect();
+        System.out.println("You left the game.");
+        state = State.PASTLOGIN;
+    }
+
+    private void redrawChessBoard() {
+        if (currentGame != null && currentGame.game() != null) {
+            PrintBoard.drawChessBoard(currentGame.game().getBoard(), isBlackPerspective);
+        } else {
+            System.out.println("No active game to redraw.");
+        }
+    }
+
+    private void updateGameState(GameData updatedGame) {
+        this.currentGame = updatedGame;
+        if (updatedGame.game() != null) {
+            PrintBoard.drawChessBoard(updatedGame.game().getBoard(), isBlackPerspective);
+        } else {
+            System.out.println("No board data to display.");
+        }
+    }
+
     private boolean isGameOver(GameData g) {
         if (g == null || g.game() == null) {
             return true;
@@ -464,6 +453,7 @@ public class ChessClient {
                 || game.isInStalemate(TeamColor.WHITE)
                 || game.isInStalemate(TeamColor.BLACK);
     }
+
     private ChessPosition parseAlgebraic(String square) {
         if (square == null || square.length() < 2 || square.length() > 3) {
             throw new IllegalArgumentException("Invalid square notation: " + square);
@@ -485,12 +475,9 @@ public class ChessClient {
         }
         return new ChessPosition(row, col);
     }
-    public void updateGameState(GameData updatedGame) {
-        this.currentGame = updatedGame;
-        if (updatedGame.game() != null) {
-            PrintBoard.drawChessBoard(updatedGame.game().getBoard(), isBlackPerspective);
-        } else {
-            System.out.println("No board data to display.");
-        }
+
+    public static void main(String[] args) {
+        ChessClient client = new ChessClient(8080);
+        client.run();
     }
 }
