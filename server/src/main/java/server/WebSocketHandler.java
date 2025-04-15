@@ -92,24 +92,6 @@ public class WebSocketHandler {
         }
     }
 
-    private ChessMove parseMove(JsonObject moveJson) {
-        JsonObject startObj = moveJson.getAsJsonObject("start");
-        int startRow = startObj.get("row").getAsInt();
-        int startCol = startObj.get("col").getAsInt();
-
-        JsonObject endObj = moveJson.getAsJsonObject("end");
-        int endRow = endObj.get("row").getAsInt();
-        int endCol = endObj.get("col").getAsInt();
-
-        // If you ever support promotion:
-        ChessPiece.PieceType promotion = null;
-        if (moveJson.has("promotionPiece") && !moveJson.get("promotionPiece").isJsonNull()) {
-            promotion = ChessPiece.PieceType.valueOf(moveJson.get("promotionPiece").getAsString());
-        }
-
-        return new ChessMove(new ChessPosition(startRow, startCol), new ChessPosition(endRow, endCol), promotion);
-    }
-
     private void handleConnect(Session session, String authToken, int gameID) throws IOException {
         AuthData auth = validateAuth(authToken);
         if (auth == null) {

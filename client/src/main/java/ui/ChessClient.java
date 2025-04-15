@@ -24,6 +24,7 @@ public class ChessClient {
     private boolean isBlackPerspective;
     private Session webSocketSession;
     private final Gson gson = new Gson();
+
     private enum State { PRELOGIN, PASTLOGIN, GAMEPLAY }
     private State state;
 
@@ -41,15 +42,9 @@ public class ChessClient {
         System.out.println("Welcome to Chess Client");
         while (true) {
             switch (state) {
-                case PRELOGIN:
-                    runPreLogin();
-                    break;
-                case PASTLOGIN:
-                    runPastLogin();
-                    break;
-                case GAMEPLAY:
-                    runGameplay();
-                    break;
+                case PRELOGIN -> runPreLogin();
+                case PASTLOGIN -> runPastLogin();
+                case GAMEPLAY -> runGameplay();
             }
         }
     }
@@ -57,8 +52,11 @@ public class ChessClient {
     @OnOpen
     public void onOpen(Session session) {
         this.webSocketSession = session;
-        System.out.println("Connected to server");
-        sendConnectCommand();
+        System.out.println("Connected to server (WebSocket open).");
+        // Only attempt CONNECT if we actually have a valid currentGame & authData
+        if (authData != null && currentGame != null) {
+            sendConnectCommand();
+        }
     }
 
     @OnMessage
@@ -66,25 +64,26 @@ public class ChessClient {
         JsonObject json = gson.fromJson(message, JsonObject.class);
         String type = json.get("serverMessageType").getAsString();
         switch (type) {
-            case "LOAD_GAME":
-                GameData game = gson.fromJson(json.get("game"), GameData.class);
-                updateGameState(game);
-                break;
-            case "NOTIFICATION":
+            case "LOAD_GAME" -> {
+                // The server is giving us an updated GameData
+                GameData updatedGame = gson.fromJson(json.get("game"), GameData.class);
+                updateGameState(updatedGame);
+            }
+            case "NOTIFICATION" -> {
                 String notification = json.get("message").getAsString();
                 displayNotification(notification);
-                break;
-            case "ERROR":
+            }
+            case "ERROR" -> {
                 String error = json.get("errorMessage").getAsString();
                 displayError(error);
-                break;
+            }
         }
     }
 
     @OnClose
     public void onClose(Session session, CloseReason reason) {
         this.webSocketSession = null;
-        System.out.println("Disconnected from server: " + reason);
+        System.out.println("Disconnected from server (WebSocket close): " + reason);
     }
 
     @OnError
@@ -98,9 +97,10 @@ public class ChessClient {
             cmd.addProperty("commandType", "CONNECT");
             cmd.addProperty("authToken", authData.authToken());
             cmd.addProperty("gameID", currentGame.gameID());
+            // Send it
             webSocketSession.getBasicRemote().sendText(gson.toJson(cmd));
         } catch (IOException e) {
-            displayError("Error sending connect command: " + e.getMessage());
+            displayError("Error sending CONNECT command: " + e.getMessage());
         }
     }
 
@@ -112,83 +112,14 @@ public class ChessClient {
         String command = parts[0].toLowerCase();
 
         switch (command) {
-            case "help":
-                showPreLoginHelp();
-                break;
-            case "quit":
+            case "help" -> showPreLoginHelp();
+            case "quit" -> {
                 System.out.println("Goodbye!");
                 System.exit(0);
-                break;
-            case "login":
-                login();
-                break;
-            case "register":
-                register();
-                break;
-            default:
-                System.out.println("Unknown command. Type 'help' for available commands.");
-        }
-    }
-
-    private void runPastLogin() {
-        System.out.print(">>> ");
-        String input = scanner.nextLine().trim();
-        String[] parts = input.split("\\s+");
-        if (parts.length == 0) return;
-        String command = parts[0].toLowerCase();
-
-        switch (command) {
-            case "help":
-                pastLoginHelp();
-                break;
-            case "logout":
-                logout();
-                break;
-            case "create":
-                createGame();
-                break;
-            case "list":
-                listGames();
-                break;
-            case "play":
-                playGame();
-                break;
-            case "observe":
-                observeGame();
-                break;
-            default:
-                System.out.println("Unknown command. Type 'help' for available commands.");
-        }
-    }
-
-    private void runGameplay() {
-        System.out.print(">>> ");
-        String input = scanner.nextLine().trim();
-        String[] parts = input.split("\\s+");
-        if (parts.length == 0) return;
-        String command = parts[0].toLowerCase();
-
-        switch (command) {
-            case "help":
-                showGameplayHelp();
-                break;
-            case "redraw":
-                redrawChessBoard();
-                break;
-            case "leave":
-                leaveGame();
-                break;
-            case "move":
-                //makeMove();
-                break;
-            case "resign":
-                resignGame();
-                break;
-            case "highlight":
-                highlightLegalMoves();
-                break;
-            default:
-                System.out.println("Unknown command. Type 'help' for available commands.");
+            }
+            case "login" -> login();
+            case "register" -> register();
+            default -> System.out.println("Unknown command. Type 'help' for commands.");
         }
     }
 
@@ -198,26 +129,6 @@ public class ChessClient {
         System.out.println("  quit - Exit the program");
         System.out.println("  login - Log in with username and password");
         System.out.println("  register - Register a new user");
-    }
-
-    private void pastLoginHelp() {
-        System.out.println("Available commands:");
-        System.out.println("  help - Show this help message");
-        System.out.println("  logout - Log out and return to pre-login");
-        System.out.println("  create - Create a new game");
-        System.out.println("  list - List all existing games");
-        System.out.println("  play - Join a game as a player");
-        System.out.println("  observe - Observe a game");
-    }
-
-    private void showGameplayHelp() {
-        System.out.println("Gameplay Commands:");
-        System.out.println("  help - Show this help message");
-        System.out.println("  redraw - Redraw the chess board");
-        System.out.println("  leave - Leave the game and return to post-login");
-        System.out.println("  move - Make a move (format: startRow startCol endRow endCol)");
-        System.out.println("  resign - Resign from the game");
-        System.out.println("  highlight - Highlight legal moves for a piece (format: row col)");
     }
 
     private void login() {
@@ -248,6 +159,33 @@ public class ChessClient {
         } catch (ClientException e) {
             System.out.println("Register failed: " + e.getMessage());
         }
+    }
+    private void runPastLogin() {
+        System.out.print(">>> ");
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) return;
+        String command = parts[0].toLowerCase();
+
+        switch (command) {
+            case "help" -> pastLoginHelp();
+            case "logout" -> logout();
+            case "create" -> createGame();
+            case "list" -> listGames();
+            case "play" -> playGame();
+            case "observe" -> observeGame();
+            default -> System.out.println("Unknown command. Type 'help' for commands.");
+        }
+    }
+
+    private void pastLoginHelp() {
+        System.out.println("Available commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  logout - Log out and return to pre-login");
+        System.out.println("  create - Create a new game");
+        System.out.println("  list - List all existing games");
+        System.out.println("  play - Join a game as a player");
+        System.out.println("  observe - Observe a game");
     }
 
     private void logout() {
@@ -285,8 +223,8 @@ public class ChessClient {
                 System.out.println("List of games:");
                 for (int i = 0; i < currentGameList.size(); i++) {
                     GameData game = currentGameList.get(i);
-                    String white = game.whiteUsername() != null ? game.whiteUsername() : "None";
-                    String black = game.blackUsername() != null ? game.blackUsername() : "None";
+                    String white = (game.whiteUsername() != null) ? game.whiteUsername() : "None";
+                    String black = (game.blackUsername() != null) ? game.blackUsername() : "None";
                     System.out.printf("%d. Name: %s - White: %s, Black: %s%n",
                             i + 1, game.gameName(), white, black);
                 }
@@ -299,6 +237,7 @@ public class ChessClient {
     private void playGame() {
         GameData game = selectGameByNumber();
         if (game == null) return;
+
         System.out.print("Enter color (white/black): ");
         String color = scanner.nextLine().trim().toLowerCase();
         if (!color.equals("white") && !color.equals("black")) {
@@ -326,7 +265,7 @@ public class ChessClient {
             isBlackPerspective = false;
             System.out.println("Observing game: " + game.gameName());
             PrintBoard.drawChessBoard(game.game().getBoard(), isBlackPerspective);
-            connectWebSocket();
+            connectWebSocket(); // triggers @OnOpen -> sendConnectCommand
             state = State.GAMEPLAY;
         } catch (Exception e) {
             System.out.println("Failed to observe game: " + e.getMessage());
@@ -335,10 +274,10 @@ public class ChessClient {
 
     private GameData selectGameByNumber() {
         if (currentGameList == null || currentGameList.isEmpty()) {
-            System.out.println("No games available. Please run 'list' to see available games.");
+            System.out.println("No games available. Please run 'list' first.");
             return null;
         }
-        System.out.println("Enter the game number from the list (e.g., '1' for the first game):");
+        System.out.println("Enter the game number from the list (e.g. '1' for the first game):");
         System.out.print("Game number: ");
         String numberStr = scanner.nextLine().trim();
         int number;
@@ -349,7 +288,7 @@ public class ChessClient {
             return null;
         }
         if (number < 1 || number > currentGameList.size()) {
-            System.out.printf("Invalid game number. Please enter a number between 1 and %d.%n", currentGameList.size());
+            System.out.printf("Invalid game number. Must be between 1 and %d%n", currentGameList.size());
             return null;
         }
         return currentGameList.get(number - 1);
@@ -360,7 +299,81 @@ public class ChessClient {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             container.connectToServer(this, new URI("ws://localhost:8080/ws"));
         } catch (Exception e) {
-            System.out.println("Failed to connect to WebSocket server: " + e.getMessage());
+            System.out.println("Failed to connect to WebSocket: " + e.getMessage());
+        }
+    }
+
+    private void runGameplay() {
+        System.out.print(">>> ");
+        String input = scanner.nextLine().trim();
+        String[] parts = input.split("\\s+");
+        if (parts.length == 0) return;
+        String command = parts[0].toLowerCase();
+
+        switch (command) {
+            case "help" -> showGameplayHelp();
+            case "redraw" -> redrawChessBoard();
+            case "leave" -> leaveGame();
+            case "move" -> makeMove();
+            case "resign" -> resignGame();
+            case "highlight" -> highlightLegalMoves();
+            default -> System.out.println("Unknown command. Type 'help' for commands.");
+        }
+    }
+
+    private void showGameplayHelp() {
+        System.out.println("Gameplay Commands:");
+        System.out.println("  help - Show this help message");
+        System.out.println("  redraw - Redraw the chess board");
+        System.out.println("  leave - Leave the game and return to post-login");
+        System.out.println("  move - Make a move (format: startRow startCol endRow endCol)");
+        System.out.println("  resign - Resign from the game");
+        System.out.println("  highlight - Highlight legal moves for a piece (format: row col)");
+    }
+
+    private void makeMove() {
+        if (webSocketSession == null || !webSocketSession.isOpen()) {
+            System.out.println("WebSocket is not connected. Cannot make move.");
+            return;
+        }
+        System.out.println("Enter your move: [startRow startCol endRow endCol]");
+        System.out.print(">>> ");
+        String line = scanner.nextLine().trim();
+        String[] parts = line.split("\\s+");
+        if (parts.length != 4) {
+            System.out.println("Invalid input. Must be 4 integers (startRow startCol endRow endCol).");
+            return;
+        }
+        try {
+            int startRow = Integer.parseInt(parts[0]);
+            int startCol = Integer.parseInt(parts[1]);
+            int endRow   = Integer.parseInt(parts[2]);
+            int endCol   = Integer.parseInt(parts[3]);
+
+            // Construct JSON for the MAKE_MOVE command
+            JsonObject cmd = new JsonObject();
+            cmd.addProperty("commandType", "MAKE_MOVE");
+            cmd.addProperty("authToken", authData.authToken());
+            cmd.addProperty("gameID", currentGame.gameID());
+
+            // Nested "move": { "start": {"row": X, "col": Y}, "end": {"row": X, "col": Y} }
+            JsonObject moveObj = new JsonObject();
+            JsonObject startObj = new JsonObject();
+            startObj.addProperty("row", startRow);
+            startObj.addProperty("col", startCol);
+            JsonObject endObj = new JsonObject();
+            endObj.addProperty("row", endRow);
+            endObj.addProperty("col", endCol);
+
+            moveObj.add("start", startObj);
+            moveObj.add("end", endObj);
+            cmd.add("move", moveObj);
+
+            webSocketSession.getBasicRemote().sendText(gson.toJson(cmd));
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Rows and columns must be integers.");
+        } catch (IOException e) {
+            System.out.println("Error sending MAKE_MOVE: " + e.getMessage());
         }
     }
 
@@ -373,12 +386,18 @@ public class ChessClient {
     }
 
     private void leaveGame() {
+        if (webSocketSession == null || !webSocketSession.isOpen()) {
+            System.out.println("Not currently connected to a game.");
+            return;
+        }
         try {
             JsonObject cmd = new JsonObject();
             cmd.addProperty("commandType", "LEAVE");
             cmd.addProperty("authToken", authData.authToken());
             cmd.addProperty("gameID", currentGame.gameID());
             webSocketSession.getBasicRemote().sendText(gson.toJson(cmd));
+
+            // Then close WebSocket
             webSocketSession.close();
             state = State.PASTLOGIN;
             System.out.println("Left the game.");
@@ -397,8 +416,9 @@ public class ChessClient {
                 cmd.addProperty("authToken", authData.authToken());
                 cmd.addProperty("gameID", currentGame.gameID());
                 webSocketSession.getBasicRemote().sendText(gson.toJson(cmd));
-                state = State.PASTLOGIN;
+                // Stay connected, but the game is over
                 System.out.println("You have resigned from the game.");
+                state = State.PASTLOGIN;
             } catch (IOException e) {
                 System.out.println("Error resigning: " + e.getMessage());
             }
@@ -416,6 +436,10 @@ public class ChessClient {
         try {
             int row = Integer.parseInt(parts[0]);
             int col = Integer.parseInt(parts[1]);
+            if (currentGame == null) {
+                System.out.println("No active game to highlight moves.");
+                return;
+            }
             ChessPosition pos = new ChessPosition(row, col);
             Collection<ChessMove> moves = currentGame.game().validMoves(pos);
             if (moves == null || moves.isEmpty()) {
@@ -428,9 +452,10 @@ public class ChessClient {
         }
     }
 
-    private void updateGameState(GameData game) {
-        this.currentGame = game;
-        PrintBoard.drawChessBoard(game.game().getBoard(), isBlackPerspective);
+    // HELPER METHODS
+    private void updateGameState(GameData updatedGame) {
+        this.currentGame = updatedGame;
+        PrintBoard.drawChessBoard(updatedGame.game().getBoard(), isBlackPerspective);
     }
 
     private void displayNotification(String message) {
