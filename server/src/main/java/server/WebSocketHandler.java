@@ -11,10 +11,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ServerMessage;
-import chess.ChessGame;
-import chess.ChessMove;
-import chess.ChessPosition;
-import chess.InvalidMoveException;
+import chess.*;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,7 +30,6 @@ public class WebSocketHandler {
     private static class GameSessionInfo {
         int gameID;
         String username;
-
         GameSessionInfo(int gameID, String username) {
             this.gameID = gameID;
             this.username = username;
@@ -59,20 +55,30 @@ public class WebSocketHandler {
     @OnWebSocketMessage
     public void onMessage(Session session, String message) throws IOException {
         try {
-            JsonObject json = gson.fromJson(message, JsonObject.class);
-            String commandTypeStr = json.get("commandType").getAsString();
-            UserGameCommand.CommandType commandType = UserGameCommand.CommandType.valueOf(commandTypeStr);
-            String authToken = json.get("authToken").getAsString();
-            int gameID = json.get("gameID").getAsInt();
+            // Instead of manually parsing everything, parse into UserGameCommand:
+            UserGameCommand command = gson.fromJson(message, UserGameCommand.class);
+
+            if (command == null) {
+                sendError(session, "Error processing message: command could not be parsed.");
+                return;
+            }
+
+            UserGameCommand.CommandType commandType = command.getCommandType();
+            String authToken = command.getAuthToken();
+            int gameID = command.getGameID();
 
             switch (commandType) {
                 case CONNECT:
                     handleConnect(session, authToken, gameID);
                     break;
                 case MAKE_MOVE:
-                    JsonObject moveJson = json.getAsJsonObject("move");
-                    ChessMove move = parseMove(moveJson);
-                    handleMakeMove(session, authToken, gameID, move);
+                    // The command object itself has the move already if it was in the JSON
+                    ChessMove move = command.getMove();
+                    if (move == null) {
+                        sendError(session, "Error: Move data not provided");
+                    } else {
+                        handleMakeMove(session, authToken, gameID, move);
+                    }
                     break;
                 case LEAVE:
                     handleLeave(session, authToken, gameID);
@@ -86,6 +92,27 @@ public class WebSocketHandler {
         } catch (Exception e) {
             sendError(session, "Error processing message: " + e.getMessage());
         }
+    }
+
+    // This is now not strictly needed if GSON populates command.getMove(),
+    // but if you want to keep a manual parser in case you do partial manual parsing:
+    private ChessMove parseMove(JsonObject moveJson) {
+        // The "start" and "end" are nested objects in your JSON
+        JsonObject startObj = moveJson.getAsJsonObject("start");
+        int startRow = startObj.get("row").getAsInt();
+        int startCol = startObj.get("col").getAsInt();
+
+        JsonObject endObj = moveJson.getAsJsonObject("end");
+        int endRow = endObj.get("row").getAsInt();
+        int endCol = endObj.get("col").getAsInt();
+
+        // If you ever support promotion:
+        ChessPiece.PieceType promotion = null;
+        if (moveJson.has("promotionPiece") && !moveJson.get("promotionPiece").isJsonNull()) {
+            promotion = ChessPiece.PieceType.valueOf(moveJson.get("promotionPiece").getAsString());
+        }
+
+        return new ChessMove(new ChessPosition(startRow, startCol), new ChessPosition(endRow, endCol), promotion);
     }
 
     private void handleConnect(Session session, String authToken, int gameID) throws IOException {
@@ -133,12 +160,13 @@ public class WebSocketHandler {
             return;
         }
         try {
-            if (!chessGame.validMoves(move.getStartPosition()).contains(move)) {
+            if (chessGame.validMoves(move.getStartPosition()) == null ||
+                    !chessGame.validMoves(move.getStartPosition()).contains(move)) {
                 sendError(session, "Error: Invalid move");
                 return;
             }
             chessGame.makeMove(move);
-            updateGame(gameID, new GameData(gameID,game.whiteUsername(), game.blackUsername(),game.gameName(),chessGame));
+            updateGame(gameID, new GameData(gameID, game.whiteUsername(), game.blackUsername(), game.gameName(), chessGame));
             broadcastLoadGame(gameID, game);
             broadcastNotification(gameID, session, username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition());
             checkGameStatus(gameID, chessGame, color);
@@ -256,11 +284,11 @@ public class WebSocketHandler {
     }
 
     private boolean isGameOver(int gameID, ChessGame game) {
-        return game.isInCheckmate(ChessGame.TeamColor.WHITE) ||
-                game.isInCheckmate(ChessGame.TeamColor.BLACK) ||
-                game.isInStalemate(ChessGame.TeamColor.WHITE) ||
-                game.isInStalemate(ChessGame.TeamColor.BLACK) ||
-                gameOverMap.getOrDefault(gameID, false);
+        return game.isInCheckmate(ChessGame.TeamColor.WHITE)
+                || game.isInCheckmate(ChessGame.TeamColor.BLACK)
+                || game.isInStalemate(ChessGame.TeamColor.WHITE)
+                || game.isInStalemate(ChessGame.TeamColor.BLACK)
+                || gameOverMap.getOrDefault(gameID, false);
     }
 
     private void updateGame(int gameID, GameData game) throws DataAccessException {
@@ -268,7 +296,8 @@ public class WebSocketHandler {
     }
 
     private void checkGameStatus(int gameID, ChessGame game, ChessGame.TeamColor color) throws IOException {
-        ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE) ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+        ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE) ?
+                ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
         if (game.isInCheck(opponentColor)) {
             broadcastNotification(gameID, null, opponentColor + " is in check");
         }
@@ -316,20 +345,10 @@ public class WebSocketHandler {
                 .collect(Collectors.toSet());
     }
 
-    private ChessMove parseMove(JsonObject moveJson) {
-        int startRow = moveJson.get("startRow").getAsInt();
-        int startCol = moveJson.get("startCol").getAsInt();
-        int endRow = moveJson.get("endRow").getAsInt();
-        int endCol = moveJson.get("endCol").getAsInt();
-        ChessPosition start = new ChessPosition(startRow, startCol);
-        ChessPosition end = new ChessPosition(endRow, endCol);
-        return new ChessMove(start, end, null);
-    }
+    // ----- Server message classes (unchanged but shown for reference) -----
 
-    // Server message classes
     public static class LoadGameMessage extends ServerMessage {
         public ChessGame game;
-
         public LoadGameMessage(ChessGame game) {
             super(ServerMessageType.LOAD_GAME);
             this.game = game;
@@ -338,7 +357,6 @@ public class WebSocketHandler {
 
     public static class NotificationMessage extends ServerMessage {
         public String message;
-
         public NotificationMessage(String message) {
             super(ServerMessageType.NOTIFICATION);
             this.message = message;
@@ -347,7 +365,6 @@ public class WebSocketHandler {
 
     public static class ErrorMessage extends ServerMessage {
         public String errorMessage;
-
         public ErrorMessage(String errorMessage) {
             super(ServerMessageType.ERROR);
             this.errorMessage = errorMessage;
