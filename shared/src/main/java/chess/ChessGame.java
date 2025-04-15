@@ -128,9 +128,6 @@ public class ChessGame {
         return false;
     }
 
-
-
-
     public boolean isInCheckmate(TeamColor teamColor) {
         if (!isInCheck(teamColor)){
             return false;

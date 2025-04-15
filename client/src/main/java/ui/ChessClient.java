@@ -1,5 +1,5 @@
 package ui;
-
+import chess.ChessPiece;
 import com.google.gson.Gson;
 import model.AuthData;
 import model.GameData;
@@ -7,16 +7,13 @@ import chess.ChessGame;
 import chess.ChessMove;
 import chess.ChessPosition;
 import chess.ChessGame.TeamColor;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
-
 public class ChessClient {
     private final ServerFacade serverFacade;
     private final Scanner scanner;
-    private final WebSocketHandler webSocketHandler;
-
+    private final WebSocketClient webSocketHandler;
     private AuthData authData;
     private List<GameData> currentGameList;
     private GameData currentGame;
@@ -30,7 +27,7 @@ public class ChessClient {
     public ChessClient(int port) {
         this.serverFacade = new ServerFacade(port);
         this.scanner = new Scanner(System.in);
-        this.webSocketHandler = new WebSocketHandler(this);
+        this.webSocketHandler = new WebSocketClient(this);
         this.authData = null;
         this.currentGameList = null;
         this.currentGame = null;
@@ -121,7 +118,6 @@ public class ChessClient {
             default -> System.out.println("Unknown command. Type 'help' for available commands.");
         }
     }
-
     private void showPreLoginHelp() {
         System.out.println("Available commands:");
         System.out.println("  help - Show this help message");
@@ -129,7 +125,6 @@ public class ChessClient {
         System.out.println("  login - Log in with username and password");
         System.out.println("  register - Register a new user");
     }
-
     private void pastLoginHelp() {
         System.out.println("Available commands:");
         System.out.println("  help - Show this help message");
@@ -139,7 +134,6 @@ public class ChessClient {
         System.out.println("  play - Join a game as a player");
         System.out.println("  observe - Observe a game");
     }
-
     private void showGameplayHelp() {
         System.out.println("Gameplay Commands:");
         System.out.println("  help - Show this help message");
@@ -149,13 +143,11 @@ public class ChessClient {
         System.out.println("  resign - Resign from the game");
         System.out.println("  highlight - Highlight legal moves for a piece (format: row col)");
     }
-
     private void login() {
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
         System.out.print("Password: ");
         String password = scanner.nextLine().trim();
-
         try {
             authData = serverFacade.login(username, password);
             System.out.println("Logged in as " + authData.username());
@@ -198,7 +190,6 @@ public class ChessClient {
             state = State.PRELOGIN;
         }
     }
-
     private void logout() {
         try {
             serverFacade.logout(authData.authToken());
@@ -261,7 +252,6 @@ public class ChessClient {
             }
         }
     }
-
     private void playGame() {
         GameData chosen = selectGameByNumber();
         if (chosen == null) {return;}
@@ -291,7 +281,6 @@ public class ChessClient {
             System.out.println("Failed to join game: " + e.getMessage());
         }
     }
-
     private void observeGame() {
         GameData chosen = selectGameByNumber();
         if (chosen == null) {return;}
@@ -314,7 +303,6 @@ public class ChessClient {
             System.out.println("Failed to observe: " + e.getMessage());
         }
     }
-
     private GameData selectGameByNumber() {
         if (currentGameList == null || currentGameList.isEmpty()) {
             System.out.println("No active games to choose from. Try 'list' first.");
@@ -335,7 +323,6 @@ public class ChessClient {
         }
         return currentGameList.get(choice - 1);
     }
-
     private void makeMove() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game or missing game data. Cannot move.");
@@ -359,20 +346,45 @@ public class ChessClient {
             System.out.println("Usage: move <start> <end>, e.g. 'a2 a4'");
             return;
         }
-
         String startNotation = tokens[0];
         String endNotation = tokens[1];
 
         try {
             ChessPosition startPos = parseAlgebraic(startNotation);
             ChessPosition endPos = parseAlgebraic(endNotation);
-            ChessMove move = new ChessMove(startPos, endPos, null); // Assuming no promotion for simplicity
+            ChessPiece piece = currentGame.game().getBoard().getPiece(startPos);
+            ChessPiece.PieceType promotionPiece = null;
+            if (piece != null && piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+                if ((piece.getTeamColor() == TeamColor.WHITE && endPos.getRow() == 8) ||
+                        (piece.getTeamColor() == TeamColor.BLACK && endPos.getRow() == 1)) {
+                    promotionPiece = promptPromotionChoice();
+                }
+            }
+            ChessMove move = new ChessMove(startPos, endPos, promotionPiece);
             webSocketHandler.sendMakeMoveCommand(move);
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid notation: " + e.getMessage());
         }
     }
-
+    private ChessPiece.PieceType promptPromotionChoice() {
+        while (true) {
+            System.out.println("Promote pawn to: (Q, R, B, or N)?");
+            System.out.print(">>> ");
+            String input = scanner.nextLine().trim().toUpperCase();
+            switch (input) {
+                case "Q":
+                    return ChessPiece.PieceType.QUEEN;
+                case "R":
+                    return ChessPiece.PieceType.ROOK;
+                case "B":
+                    return ChessPiece.PieceType.BISHOP;
+                case "N":
+                    return ChessPiece.PieceType.KNIGHT;
+                default:
+                    System.out.println("Invalid choice. Please enter Q, R, B, or N.");
+            }
+        }
+    }
     private void highlightLegalMoves() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game or missing game data. Cannot highlight.");
@@ -396,7 +408,6 @@ public class ChessClient {
             PrintBoard.printChessBoardWithHighlights(currentGame.game().getBoard(), moves, isBlackPerspective);
         }
     }
-
     private void resignGame() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game to resign from.");
@@ -413,9 +424,7 @@ public class ChessClient {
             return;
         }
         webSocketHandler.sendResignCommand();
-        state = State.PASTLOGIN;
     }
-
     private void leaveGame() {
         if (currentGame == null || currentGame.game() == null) {
             System.out.println("No active game to leave.");
@@ -425,7 +434,6 @@ public class ChessClient {
         System.out.println("You left the game.");
         state = State.PASTLOGIN;
     }
-
     private void redrawChessBoard() {
         if (currentGame != null && currentGame.game() != null) {
             PrintBoard.drawChessBoard(currentGame.game().getBoard(), isBlackPerspective);
@@ -433,7 +441,6 @@ public class ChessClient {
             System.out.println("No active game to redraw.");
         }
     }
-
     private void updateGameState(GameData updatedGame) {
         this.currentGame = updatedGame;
         if (updatedGame.game() != null) {
@@ -442,7 +449,6 @@ public class ChessClient {
             System.out.println("No board data to display.");
         }
     }
-
     private boolean isGameOver(GameData g) {
         if (g == null || g.game() == null) {
             return true;
@@ -453,7 +459,6 @@ public class ChessClient {
                 || game.isInStalemate(TeamColor.WHITE)
                 || game.isInStalemate(TeamColor.BLACK);
     }
-
     private ChessPosition parseAlgebraic(String square) {
         if (square == null || square.length() < 2 || square.length() > 3) {
             throw new IllegalArgumentException("Invalid square notation: " + square);
@@ -475,7 +480,6 @@ public class ChessClient {
         }
         return new ChessPosition(row, col);
     }
-
     public static void main(String[] args) {
         ChessClient client = new ChessClient(8080);
         client.run();

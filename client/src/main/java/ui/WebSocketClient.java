@@ -10,14 +10,14 @@ import java.io.IOException;
 import java.net.URI;
 
 @ClientEndpoint
-public class WebSocketHandler {
+public class WebSocketClient {
     private final ChessClient chessClient;
     private Session session;
     private String authToken;
     private int gameID;
     private final Gson gson = new Gson();
 
-    public WebSocketHandler(ChessClient chessClient) {
+    public WebSocketClient(ChessClient chessClient) {
         this.chessClient = chessClient;
     }
 

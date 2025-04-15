@@ -276,24 +276,42 @@ public class WebSocketHandler {
         ChessGame.TeamColor opponentColor = (color == ChessGame.TeamColor.WHITE)
                 ? ChessGame.TeamColor.BLACK
                 : ChessGame.TeamColor.WHITE;
-
+        GameData gameData = getGame(gameID);
+        if (gameData == null) {
+            return;
+        }
+        String whiteUser = (gameData.whiteUsername() != null) ? gameData.whiteUsername() : "UnknownWhite";
+        String blackUser = (gameData.blackUsername() != null) ? gameData.blackUsername() : "UnknownBlack";
         boolean isCheckmate = game.isInCheckmate(opponentColor);
         boolean isStalemate = game.isInStalemate(opponentColor);
         if (isCheckmate) {
-            broadcastNotification(gameID, null,
-                    opponentColor + " is in checkmate. " + color + " wins!");
+            if (opponentColor == ChessGame.TeamColor.WHITE) {
+                broadcastNotification(gameID, null,
+                        "White(" + whiteUser + ") is in checkmate in game #" + gameID
+                                + ". Black(" + blackUser + ") wins!");
+            } else {
+                broadcastNotification(gameID, null,
+                        "Black(" + blackUser + ") is in checkmate in game #" + gameID
+                                + ". White(" + whiteUser + ") wins!");
+            }
             gameOverMap.put(gameID, true);
         }
         else if (isStalemate) {
             broadcastNotification(gameID, null,
-                    "Stalemate! The game is a draw.");
+                    "Stalemate in game #" + gameID + "! The game is a draw.");
             gameOverMap.put(gameID, true);
         }
         else if (game.isInCheck(opponentColor)) {
-            broadcastNotification(gameID, null,
-                    opponentColor + " is in check");
+            if (opponentColor == ChessGame.TeamColor.WHITE) {
+                broadcastNotification(gameID, null,
+                        "White(" + whiteUser + ") is in check in game #" + gameID + ".");
+            } else {
+                broadcastNotification(gameID, null,
+                        "Black(" + blackUser + ") is in check in game #" + gameID + ".");
+            }
         }
     }
+
 
 
     private void sendLoadGame(Session session, GameData gameData) throws IOException {
