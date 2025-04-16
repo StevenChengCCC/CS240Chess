@@ -81,21 +81,33 @@ public class WebSocketClient {
             cmd.addProperty("commandType", "MAKE_MOVE");
             cmd.addProperty("authToken", authToken);
             cmd.addProperty("gameID", gameID);
+
             JsonObject moveObj = new JsonObject();
+
             JsonObject startObj = new JsonObject();
             startObj.addProperty("row", move.getStartPosition().getRow());
             startObj.addProperty("col", move.getStartPosition().getColumn());
+
             JsonObject endObj = new JsonObject();
             endObj.addProperty("row", move.getEndPosition().getRow());
             endObj.addProperty("col", move.getEndPosition().getColumn());
+
             moveObj.add("startPosition", startObj);
             moveObj.add("endPosition", endObj);
+
+            // If a promotion piece is specified, include it in the JSON
+            if (move.getPromotionPiece() != null) {
+                moveObj.addProperty("promotionPiece", move.getPromotionPiece().name());
+            }
+
             cmd.add("move", moveObj);
+
             session.getBasicRemote().sendText(gson.toJson(cmd));
         } catch (IOException e) {
             chessClient.showError("Error sending MAKE_MOVE command: " + e.getMessage());
         }
     }
+
 
     public void sendResignCommand() {
         if (session == null || !session.isOpen()) {

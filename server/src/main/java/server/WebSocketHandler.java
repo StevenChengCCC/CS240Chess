@@ -287,12 +287,10 @@ public class WebSocketHandler {
         if (isCheckmate) {
             if (opponentColor == ChessGame.TeamColor.WHITE) {
                 broadcastNotification(gameID, null,
-                        "White(" + whiteUser + ") is in checkmate in game #" + gameID
-                                + ". Black(" + blackUser + ") wins!");
+                        "White(" + whiteUser + ") is in checkmate. Black(" + blackUser + ") wins!");
             } else {
                 broadcastNotification(gameID, null,
-                        "Black(" + blackUser + ") is in checkmate in game #" + gameID
-                                + ". White(" + whiteUser + ") wins!");
+                        "Black(" + blackUser + ") is in checkmate. White(" + whiteUser + ") wins!");
             }
             gameOverMap.put(gameID, true);
         }
@@ -304,10 +302,10 @@ public class WebSocketHandler {
         else if (game.isInCheck(opponentColor)) {
             if (opponentColor == ChessGame.TeamColor.WHITE) {
                 broadcastNotification(gameID, null,
-                        "White(" + whiteUser + ") is in check in game #" + gameID + ".");
+                        "White(" + whiteUser + ") is in check.");
             } else {
                 broadcastNotification(gameID, null,
-                        "Black(" + blackUser + ") is in check in game #" + gameID + ".");
+                        "Black(" + blackUser + ") is in check.");
             }
         }
     }

@@ -338,7 +338,6 @@ public class ChessClient {
             System.out.println("It is not your turn. Please wait.");
             return;
         }
-
         System.out.println("Enter your move in algebraic notation, e.g. 'a2 a4': ");
         String line = scanner.nextLine().trim();
         String[] tokens = line.split("\\s+");
